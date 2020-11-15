@@ -1,0 +1,1 @@
+# TODO : add a script that reads through all of the airtable data and validates it
