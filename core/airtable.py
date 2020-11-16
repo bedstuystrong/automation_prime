@@ -34,3 +34,8 @@ class Client:
                 )
             )
         ]
+
+    def iter(self, table):
+        for page in self._get_client(table).get_iter():
+            for raw in page:
+                yield table.value.model_cls.from_airtable(raw)

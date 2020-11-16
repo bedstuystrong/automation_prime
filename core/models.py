@@ -52,7 +52,7 @@ class MetaBaseModel(BaseModel, abc.ABC):
 
 
 class InboundModel(MetaBaseModel):
-    method: Optional[str] = pydantic.Field(alias="Method of Contact")
+    method: str = pydantic.Field(alias="Method of Contact")
     phoneNumber: Optional[str] = pydantic.Field(alias="Phone Number")
     message: Optional[str] = pydantic.Field(alias="Message")
     voicemailRecording: Optional[str] = pydantic.Field(alias="Voicemail Recording")
@@ -81,3 +81,8 @@ class InboundModel(MetaBaseModel):
             "Phone Tag",
             "Out of Service/Cannot Reach",
         }
+
+    @pydantic.validator("method")
+    def validate_method(cls, v):
+        if v not in {"Email", "Phone Call", "Text Message"}:
+            raise ValueError("Invalid method value: {}".format(v))
