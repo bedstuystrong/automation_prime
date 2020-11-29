@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 from pathlib import Path
 
 RUNTIME = "python38"
-SOURCE = Path(__file__).resolve().parents[1]
+SOURCE = str(Path(__file__).resolve().parents[2])
 
 POLL_FUNCTION_NAMES = {"poll_inbounds"}
 HTTP_FUNCTION_NAMES = {"handle_inbound_message"}

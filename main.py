@@ -2,9 +2,9 @@ import flask
 import twilio
 from twilio.twiml.messaging_response import MessagingResponse
 
-from utils import airtable, tables
-from functions import inbound
-from models import InboundModel
+from automation import tables
+from automation.models import InboundModel
+from automation.utils import airtable
 
 
 ##########################
@@ -13,10 +13,7 @@ from models import InboundModel
 
 
 def poll_inbounds(event, context):
-    print("event: {}".format(event))
-    print("context: {}".format(context))
-
-    poll_table(tables.Table.INBOUND)
+    airtable.poll_table(tables.Table.INBOUND.value)
 
 
 def handle_inbound_message(request):

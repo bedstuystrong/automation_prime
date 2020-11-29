@@ -2,16 +2,14 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parents[1]))
-
-from automation import config, models
-from automation.utils import airtable
+from .. import models, tables
+from ..utils import airtable
 
 
 def main():
     parser = argparse.ArgumentParser("A tool for running the automation locally")
     parser.add_argument("action", choices=["poll"])
-    parser.add_argument("--table", type=lambda val: config.Table[val.upper()], required=True)
+    parser.add_argument("--table", type=lambda val: tables.Table[val.upper()], required=True)
 
     args = parser.parse_args()
 
