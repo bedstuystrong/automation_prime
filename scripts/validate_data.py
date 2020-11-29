@@ -7,10 +7,11 @@ from collections import defaultdict
 
 import pydantic
 
-# TODO : unhack this
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).parents[1]))
 
-from core import airtable, tables
+
+from automation.utils import airtable
+from automation.core import models
 
 
 def main():
@@ -19,7 +20,7 @@ def main():
     validation_errors = defaultdict(int)
 
     PAGE_MOD = 500
-    for table in [tables.Table]:
+    for table in list(models.Table):
         i = 0
         for page in client._get_client(table).get_iter():
             for raw in page:

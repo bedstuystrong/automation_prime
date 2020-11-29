@@ -10,7 +10,8 @@ from pathlib import Path
 RUNTIME = "python38"
 SOURCE = Path(__file__).resolve().parents[1]
 
-FUNCTION_NAMES = {"poll_inbounds"}
+POLL_FUNCTION_NAMES = {"poll_inbounds"}
+HTTP_FUNCTION_NAMES = {"handle_inbound_message"}
 
 POLL_TOPIC_NAME = "POLL_TOPIC"
 POLL_SCHEDULE = "* * * * *"
@@ -87,8 +88,8 @@ def deploy():
             ["gcloud", "pubsub", "topics", "create", POLL_TOPIC_NAME], check=True
         )
 
-    for func_name in FUNCTION_NAMES:
-        logging.info("Creating function: {}...".format(func_name))
+    for func_name in POLL_FUNCTION_NAMES:
+        logging.info("Creating poll function: {}...".format(func_name))
         subprocess.run(
             [
                 "gcloud",
@@ -129,6 +130,28 @@ def deploy():
             stdout=subprocess.DEVNULL,
         )
 
+    for func_name in HTTP_FUNCTION_NAMES:
+        logging.info("Creating http function: {}...".format(func_name))
+        proc = subprocess.run(
+            [
+                "gcloud",
+                "functions",
+                "deploy",
+                "--runtime",
+                "python38",
+                "--trigger-http",
+                "--allow-unauthenticated",
+                "--format",
+                "json",
+                func_name,
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+        )
+
+        url = json.loads(proc.stdout)["httpsTrigger"]["url"]
+        logging.info("Trigger for {} is: {}".format(func_name, url))
+
     logging.info("Done.")
 
 
@@ -143,7 +166,7 @@ def reset():
             ["gcloud", "-q", "pubsub", "topics", "delete", POLL_TOPIC_NAME], check=True
         )
 
-    deployed_functions = list_functions() & FUNCTION_NAMES
+    deployed_functions = list_functions() & POLL_FUNCTION_NAMES & HTTP_FUNCTION_NAMES
 
     for func_name in deployed_functions:
         logging.info("Deleting function: {}...".format(func_name))
@@ -173,6 +196,7 @@ def reset():
             ],
             check=True,
         )
+
 
 ########
 # MAIN #
