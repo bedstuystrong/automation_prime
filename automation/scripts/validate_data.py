@@ -1,17 +1,13 @@
 # TODO : add a script that reads through all of the airtable data and validates it
 
 import sys
-
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 import pydantic
 
-sys.path.append(str(Path(__file__).parents[1]))
-
-
-from automation.utils import airtable
-from automation.core import models
+from .. import models, tables
+from ..utils import airtable
 
 
 def main():
@@ -20,9 +16,9 @@ def main():
     validation_errors = defaultdict(int)
 
     PAGE_MOD = 500
-    for table in list(models.Table):
+    for table in list(tables.Table):
         i = 0
-        for page in client._get_client(table).get_iter():
+        for page in client._get_client(table.value).get_iter():
             for raw in page:
                 try:
                     rec = table.value.model_cls.from_airtable(raw)

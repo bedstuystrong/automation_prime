@@ -6,10 +6,6 @@ from typing import *
 
 import pydantic
 
-from . import models
-from .functions import inbound
-from .utils import airtable
-
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.json"
 
 _config = None
@@ -33,11 +29,3 @@ class Config(pydantic.BaseModel):
                 _config = cls(**json.loads(f.read()))
 
         return _config
-
-
-class Table(enum.Enum):
-    INBOUND = airtable.TableSpec(
-        name="inbound",
-        model_cls=models.InboundModel,
-        status_to_cb={None: inbound.on_new},
-    )
