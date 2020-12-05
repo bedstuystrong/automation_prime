@@ -1,6 +1,5 @@
 {
     "files.exclude": {
         "**/__pycache__/": true
-    },
-    "python.linting.pylintEnabled": false
+    }
 }
