@@ -15,7 +15,8 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requ
    && rm -rf /tmp/pip-tmp
 
 # [Optional] Uncomment this section to install additional OS packages.
-RUN export DEBIAN_FRONTEND=noninteractive \
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+   && apt-get -y --no-install-recommends install software-properties-common \
    && apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
    && apt-add-repository https://cli.github.com/packages \
    && apt-get update \
