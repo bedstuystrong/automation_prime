@@ -16,9 +16,9 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requ
 
 # [Optional] Uncomment this section to install additional OS packages.
 RUN export DEBIAN_FRONTEND=noninteractive \
-   && apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-   && apt-add-repository https://cli.github.com/packages
-   && apt-get update
+   && apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
+   && apt-add-repository https://cli.github.com/packages \
+   && apt-get update \
    && apt-get -y --no-install-recommends install gh
 
 # [Optional] Uncomment this line to install global node packages.
