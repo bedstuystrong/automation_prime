@@ -2,10 +2,9 @@ import argparse
 import json
 import subprocess
 import logging
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
-
-from pathlib import Path
 
 RUNTIME = "python38"
 SOURCE = str(Path(__file__).resolve().parents[2])
@@ -85,7 +84,8 @@ def deploy():
     if POLL_TOPIC_NAME not in topics:
         logging.info("Creating topic: {}...".format(POLL_TOPIC_NAME))
         subprocess.run(
-            ["gcloud", "pubsub", "topics", "create", POLL_TOPIC_NAME], check=True
+            ["gcloud", "pubsub", "topics", "create", POLL_TOPIC_NAME],
+            check=True,
         )
 
     for func_name in POLL_FUNCTION_NAMES:
@@ -163,10 +163,13 @@ def reset():
     if POLL_TOPIC_NAME in topics:
         logging.info("Deleting topic: {}...".format(POLL_TOPIC_NAME))
         subprocess.run(
-            ["gcloud", "-q", "pubsub", "topics", "delete", POLL_TOPIC_NAME], check=True
+            ["gcloud", "-q", "pubsub", "topics", "delete", POLL_TOPIC_NAME],
+            check=True,
         )
 
-    deployed_functions = list_functions() & POLL_FUNCTION_NAMES & HTTP_FUNCTION_NAMES
+    deployed_functions = (
+        list_functions() & POLL_FUNCTION_NAMES & HTTP_FUNCTION_NAMES
+    )
 
     for func_name in deployed_functions:
         logging.info("Deleting function: {}...".format(func_name))

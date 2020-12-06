@@ -5,7 +5,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": "..",
-		"args": { 
+		"args": {
 			// Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8, 3.9
 			"VARIANT": "3",
 			// Options
@@ -15,11 +15,12 @@
 	},
 
 	// Set *default* container specific settings.json values on container create.
-	"settings": { 
+	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash",
 		"python.pythonPath": "/usr/local/bin/python",
 		"python.linting.enabled": true,
-		"python.linting.pylintEnabled": false,
+    "python.linting.pylintEnabled": false,
+    "python.formatting.provider": "black",
 		"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
 		"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 		"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
