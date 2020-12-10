@@ -10,7 +10,7 @@ The (hopefully) easiest way to get working is with VS Code and devcontainers.
 
 To start, install:
 
-* Docker ([for Mac or Windows](https://www.docker.com/products/docker-desktop), or using your Linux distribution's package manager
+* Docker ([for Mac or Windows](https://www.docker.com/products/docker-desktop)), or using your Linux distribution's package manager
 * [VS Code](https://code.visualstudio.com/)
 * The [VS Code Remote Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension
 
