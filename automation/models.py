@@ -1,5 +1,4 @@
-import enum
-from typing import *
+from typing import List, Optional
 
 import pydantic
 
@@ -10,7 +9,9 @@ class InboundModel(MetaBaseModel):
     method: str = pydantic.Field(alias="Method of Contact")
     phone_number: Optional[str] = pydantic.Field(alias="Phone Number")
     message: Optional[str] = pydantic.Field(alias="Message")
-    voicemail_recording: Optional[str] = pydantic.Field(alias="Voicemail Recording")
+    voicemail_recording: Optional[str] = pydantic.Field(
+        alias="Voicemail Recording"
+    )
     # TODO : intake volunteer shouldn't be one-only
     intake_volunteer: List[str] = pydantic.Field(
         default_factory=list, alias="Intake Volunteer"

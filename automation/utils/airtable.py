@@ -11,9 +11,8 @@ Includes:
 """
 
 import abc
-import enum
 import logging
-from typing import *
+from typing import Callable, Dict, Optional, Set, Type
 
 import pydantic
 
@@ -118,7 +117,7 @@ class Client:
             for raw in self._get_client(table_spec).get_all(
                 formula=(
                     "OR({Status} != {_meta_last_seen_status}, "
-                    "AND({Status} = BLANK(), {_meta_last_seen_status} = BLANK()))"
+                    "AND({Status} = BLANK(), {_meta_last_seen_status} = BLANK()))"  # noqa: E501
                 )
             )
         ]
@@ -143,10 +142,10 @@ def poll_table(table_spec):
         cb = table_spec.status_to_cb.get(record.status)
 
         if cb is not None:
-            original = record.copy(deep=True)
+            original = record.copy(deep=True)  # noqa: F841
 
             try:
-                new = cb(record)
+                new = cb(record)  # noqa: F841
             except Exception:
                 logging.exception(
                     "Callback '{}' for the following record failed: {}".format(

@@ -1,12 +1,12 @@
-# TODO : add a script that reads through all of the airtable data and validates it
+# TODO : add a script that reads through all of the airtable data and validates
+# it
 
 import sys
 from collections import defaultdict
-from pathlib import Path
 
 import pydantic
 
-from .. import models, tables
+from .. import tables
 from ..utils import airtable
 
 
@@ -21,7 +21,9 @@ def main():
         for page in client._get_client(table.value).get_iter():
             for raw in page:
                 try:
-                    rec = table.value.model_cls.from_airtable(raw)
+                    rec = table.value.model_cls.from_airtable(  # noqa: F841
+                        raw
+                    )
 
                     if i % PAGE_MOD == 0:
                         print("Processed {} records...".format(i))
@@ -30,7 +32,9 @@ def main():
                 except pydantic.error_wrappers.ValidationError as e:
                     for val in e.errors():
                         assert val.keys() == {"loc", "msg", "type"}
-                        validation_errors[(val["loc"], val["msg"], val["type"])] += 1
+                        validation_errors[
+                            (val["loc"], val["msg"], val["type"])
+                        ] += 1
                 except StopIteration:
                     break
 
@@ -45,9 +49,7 @@ def main():
             validation_errors.items(), key=lambda tup: tup[1]
         ):
             print(
-                "\t- Encountered {} validation errors: loc={}, msg={}, type={}".format(
-                    num, loc, msg, t
-                )
+                f"\t- Encountered {num} validation errors: loc={loc}, msg={msg}, type={t}"  # noqa: E501
             )
 
     if not had_errors:
