@@ -42,3 +42,24 @@ class InboundModel(MetaBaseModel):
     def validate_method(cls, v):
         if v not in {"Email", "Phone Call", "Text Message"}:
             raise ValueError("Invalid method value: {}".format(v))
+
+
+class VolunteerModel(MetaBaseModel):
+    name: str = pydantic.Field(alias="Name")
+    # TODO : this is the only slack handle field that matters, remove the
+    # old one
+    slack_handle: Optional[str] = pydantic.Field(
+        alias="Slack Handle (Derived)"
+    )
+    phone_number: str = pydantic.Field(alias="Phone Number")
+    email: str = pydantic.Field(alias="Email Address")
+    slack_email: Optional[str] = pydantic.Field(
+        alias="Email Address (from Slack)"
+    )
+
+    @staticmethod
+    def get_valid_statuses():
+        return {
+            "New",
+            "Processed",
+        }
