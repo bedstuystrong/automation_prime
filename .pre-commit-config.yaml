@@ -13,7 +13,3 @@ repos:
     rev: '3.8.4'
     hooks:
     -   id: flake8
--   repo: https://github.com/necaris/pre-commit-pyright
-    rev: '1.1.53'
-    hooks:
-    -   id: pyright

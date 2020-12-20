@@ -205,6 +205,9 @@ def poll_table(table_spec):
 
         record.meta_last_seen_status = original_status
 
+        # TODO : consider retrying on errors or not updating the last seen
+        # status
+
         # Update the record in airtable to reflect local modifications
         client.update(table_spec, record)
 

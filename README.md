@@ -28,6 +28,9 @@ $ python -m automation.scripts.local -h
 
 Without devcontainers, you will need a recent version of Python 3. Run `./create_venv.sh` to create a virtualenv and install `automation_prime`'s dependencies, then activate that environment (`source venv/bin/activate`) and run `pip install -e .`.
 
+## Developers: Contributing
+- To run tests: `pytest automation/` from the root of your checkout
+
 ## Environment
 
 This section covers steps required for setting up the environment for the automation.

@@ -15,8 +15,15 @@ class AirtableConfig(pydantic.BaseModel):
     table_names: Dict[str, str]
 
 
+class SlackConfig(pydantic.BaseModel):
+    api_key: str
+    test_user_email: str
+    test_user_id: str
+
+
 class Config(pydantic.BaseModel):
     airtable: AirtableConfig
+    slack: SlackConfig
 
     @classmethod
     def load(cls):
