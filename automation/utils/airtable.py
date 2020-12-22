@@ -158,6 +158,8 @@ class Client:
 def poll_table(table_spec):
     client = Client()
 
+    logger.info("Polling table: {}".format(table_spec.name))
+
     success = True
 
     for record in client.poll(table_spec):

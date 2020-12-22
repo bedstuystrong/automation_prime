@@ -76,6 +76,13 @@ class SlackErrors(enum.Enum):
 
 
 # TODO : add support for other slack client methods
+#
+# TODO : make the interface better and support pagination and
+# retrying (upon rate limiting):
+#
+# Example Interface:
+#    slack = SlackClient()
+#    user = slack.users.find(email='leif@example.com')
 class SlackClient:
     def __init__(self):
         self._slack_sdk_client = slack_sdk.WebClient(
@@ -95,7 +102,7 @@ class SlackClient:
             if single_result:
                 return model_type(**res.data[data_key])
             else:
-                return [res(**e) for e in res.data[data_key]]
+                return [model_type(**e) for e in res.data[data_key]]
 
         return wrapper
 

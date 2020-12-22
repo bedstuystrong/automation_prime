@@ -1,8 +1,11 @@
 import argparse
+import logging
 import sys
 
-from .. import tables
-from ..utils import airtable
+logging.basicConfig(level=logging.INFO)
+
+from .. import tables  # noqa: E402
+from ..utils import airtable  # noqa: E402
 
 
 def main():

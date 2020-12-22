@@ -1,8 +1,11 @@
+import logging
 from twilio.twiml.messaging_response import MessagingResponse
 
-from automation import tables
-from automation.models import InboundModel
-from automation.utils import airtable
+logging.basicConfig(level=logging.INFO)
+
+from automation import tables  # noqa: E402
+from automation.models import InboundModel  # noqa: E402
+from automation.utils import airtable  # noqa: E402
 
 
 ##########################
