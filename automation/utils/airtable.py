@@ -16,16 +16,19 @@ from typing import Callable, Dict, Optional, Set, Type
 
 import pydantic
 
-from airtable import Airtable
+from airtable import Airtable as _AirtableClient
 
 from .. import config
 
-
-##############
-# BASE MODEL #
-##############
+logger = logging.getLogger(__name__)
 
 
+###############
+# BASE MODELS #
+###############
+
+
+# TODO : consider not allowing users change the id field
 class BaseModel(pydantic.BaseModel, abc.ABC):
     id: str
 
@@ -84,6 +87,8 @@ class TableSpec(pydantic.BaseModel):
     def get_airtable_name(self):
         return config.Config.load().airtable.table_names[self.name]
 
+    # TODO : add a `status_to_cb` validator that calls `get_valid_statuses`
+
 
 ##########
 # CLIENT #
@@ -96,7 +101,7 @@ class Client:
 
     def _get_client(self, table_spec):
         if table_spec.name not in self._table_name_to_client.keys():
-            self._table_name_to_client[table_spec.name] = Airtable(
+            self._table_name_to_client[table_spec.name] = _AirtableClient(
                 config.Config.load().airtable.base_id,
                 table_spec.get_airtable_name(),
                 config.Config.load().airtable.api_key,
@@ -112,12 +117,23 @@ class Client:
 
     def poll(self, table_spec):
         # TODO : sort by creation time asc
+
+        # NOTE here is a formula for querying on a blank status
+        # TODO : get rid of this if we don't need it
+        # "IF("
+        # "{{Status}} = BLANK(),"
+        # # If blank...
+        # "{{_meta_last_seen_status}} != \"{blank_sentinel}\","
+        # # If not blank...
+        # "{{Status}} != {{_meta_last_seen_status}}"
+        # ")"
+
         return [
             table_spec.model_cls.from_airtable(raw)
             for raw in self._get_client(table_spec).get_all(
                 formula=(
-                    "OR({Status} != {_meta_last_seen_status}, "
-                    "AND({Status} = BLANK(), {_meta_last_seen_status} = BLANK()))"  # noqa: E501
+                    "AND({Status} != BLANK(), "
+                    "{Status} != {_meta_last_seen_status})"
                 )
             )
         ]
@@ -126,6 +142,12 @@ class Client:
         for page in self._get_client(table_spec).get_iter():
             for raw in page:
                 yield table_spec.model_cls.from_airtable(raw)
+
+    def update(self, table_spec, model):
+        self._get_client(table_spec).update(
+            model.id,
+            model.to_airtable()["fields"],
+        )
 
 
 #########
@@ -136,25 +158,59 @@ class Client:
 def poll_table(table_spec):
     client = Client()
 
+    logger.info("Polling table: {}".format(table_spec.name))
+
     success = True
 
     for record in client.poll(table_spec):
+        assert record.status is not None
+
+        logger.info(
+            "Processing '{}' record: {}".format(table_spec.name, record)
+        )
+
+        original_id = record.id
+        original_status = record.status
+
         cb = table_spec.status_to_cb.get(record.status)
 
         if cb is not None:
-            original = record.copy(deep=True)  # noqa: F841
-
             try:
-                new = cb(record)  # noqa: F841
+                cb(record)  # noqa: F841
             except Exception:
-                logging.exception(
-                    "Callback '{}' for the following record failed: {}".format(
+                logger.exception(
+                    "Callback '{}' for record failed: {}".format(
                         cb.__qualname__,
-                        record,
+                        record.id,
                     )
                 )
                 success = False
 
-            # TODO : update record if dirty
+            if original_id != record.id:
+                raise ValueError(
+                    (
+                        "Callback '{}' modified the ID of the record: "
+                        "original={}, new={}"
+                    ).format(
+                        cb.__qualname__,
+                        original_id,
+                        record.id,
+                    )
+                )
+        else:
+            logger.info(
+                "No callback for record with status '{}': {}".format(
+                    record.status,
+                    record.id,
+                )
+            )
+
+        record.meta_last_seen_status = original_status
+
+        # TODO : consider retrying on errors or not updating the last seen
+        # status
+
+        # Update the record in airtable to reflect local modifications
+        client.update(table_spec, record)
 
     return success

@@ -27,3 +27,25 @@ $ python -m automation.scripts.local -h
 ### Other Systems
 
 Without devcontainers, you will need a recent version of Python 3. Run `./create_venv.sh` to create a virtualenv and install `automation_prime`'s dependencies, then activate that environment (`source venv/bin/activate`) and run `pip install -e .`.
+
+## Developers: Contributing
+- To run tests: `pytest automation/` from the root of your checkout
+
+## Environment
+
+This section covers steps required for setting up the environment for the automation.
+
+### Staging Airtable
+
+1. Duplicate production base, including records
+2. Rename base to "STAGING"
+3. Add automation bot user to staging base (with editor permissions)
+4. Get base ID: go to airtable.com/api, select the staging base, and copy the base ID into your `config.json`
+
+## Migration Notes
+
+- All tables must have a new field `_meta_last_seen_status` (single line text type)
+- NOTE that as opposed to the vintage automation, all records with `{Status} = BLANK()` are ignored
+- Volunteers table:
+    - Add a new status choice: `New`
+    - Update form to include status field with `New` as the only option

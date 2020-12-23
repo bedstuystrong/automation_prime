@@ -1,8 +1,11 @@
 import argparse
+import logging
 import sys
 
-from .. import tables
-from ..utils import airtable
+logging.basicConfig(level=logging.INFO)
+
+from .. import tables  # noqa: E402
+from ..utils import airtable  # noqa: E402
 
 
 def main():
@@ -16,12 +19,15 @@ def main():
 
     args = parser.parse_args()
 
+    succeeded = True
+
     if args.action == "poll":
-        airtable.poll_table(args.table.value)
+        succeeded = airtable.poll_table(args.table.value)
     else:
         raise ValueError("Unsupported action: {}".format(args.action))
 
-    sys.exit(0)
+    print("Succeeded!" if succeeded else "Failed!")
+    sys.exit(0 if succeeded else 1)
 
 
 if __name__ == "__main__":
