@@ -19,10 +19,11 @@ def main():
 
     args = parser.parse_args()
 
-    succeeded = True
+    client = airtable.AirtableClient()
 
+    succeeded = True
     if args.action == "poll":
-        succeeded = airtable.poll_table(args.table.value)
+        succeeded = airtable.poll_table(client, args.table.value)
     else:
         raise ValueError("Unsupported action: {}".format(args.action))
 

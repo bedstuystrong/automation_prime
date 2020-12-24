@@ -97,6 +97,7 @@ def test_poll_table_basic(mock_airtable_client):
 
 
 def test_poll_table_retries(mock_airtable_client):
+    """Test the case where all callback calls fail"""
     test_model = FooModel(
         id=get_random_airtable_id(),
         status="New",
@@ -106,13 +107,11 @@ def test_poll_table_retries(mock_airtable_client):
 
     # NOTE that we have to create the mock from a no-op lambda to set magic
     # attributes used for logging in `poll_table`
-    on_new_mock = mock.MagicMock(spec=lambda: None)
+    on_new_mock = mock.MagicMock(
+        spec=lambda: None, side_effect=Exception("Fuuuuuu")
+    )
 
     test_spec = get_foo_table_spec({"New": on_new_mock})
-
-    # Test case where all retries fail
-
-    on_new_mock.side_effect = Exception("Fuuuuuu")
 
     poll_res = airtable.poll_table(
         mock_airtable_client,
@@ -128,6 +127,7 @@ def test_poll_table_retries(mock_airtable_client):
 
 
 def test_poll_table_retries_transient(mock_airtable_client):
+    """Test the case where all but the last callback calls fail"""
     test_model = FooModel(
         id=get_random_airtable_id(),
         status="New",
@@ -137,14 +137,16 @@ def test_poll_table_retries_transient(mock_airtable_client):
 
     # NOTE that we have to create the mock from a no-op lambda to set magic
     # attributes used for logging in `poll_table`
-    on_new_mock = mock.MagicMock(spec=lambda: None)
+    on_new_mock = mock.MagicMock(
+        spec=lambda: None,
+        side_effect=[
+            Exception("Fuuuuuu"),
+            Exception("Fuuuuuu"),
+            None,
+        ],
+    )
 
     test_spec = get_foo_table_spec({"New": on_new_mock})
-    on_new_mock.side_effect = [
-        Exception("Fuuuuuu"),
-        Exception("Fuuuuuu"),
-        None,
-    ]
 
     poll_res = airtable.poll_table(
         mock_airtable_client,
