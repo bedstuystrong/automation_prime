@@ -23,6 +23,13 @@ from .. import config
 logger = logging.getLogger(__name__)
 
 
+##########
+# CONSTS #
+##########
+
+DEFAULT_POLL_TABLE_MAX_NUM_RETRIES = 3
+
+
 ###############
 # BASE MODELS #
 ###############
@@ -31,6 +38,9 @@ logger = logging.getLogger(__name__)
 # TODO : consider not allowing users change the id field
 class BaseModel(pydantic.BaseModel, abc.ABC):
     id: str
+
+    class Config:
+        allow_population_by_field_name = True
 
     @classmethod
     def from_airtable(cls, raw_dict):
@@ -95,7 +105,7 @@ class TableSpec(pydantic.BaseModel):
 ##########
 
 
-class Client:
+class AirtableClient:
     def __init__(self):
         self._table_name_to_client = {}
 
@@ -155,9 +165,9 @@ class Client:
 #########
 
 # TODO : handle missing statuses (e.g. airtable field was updated)
-def poll_table(table_spec):
-    client = Client()
-
+def poll_table(
+    client, table_spec, max_num_retries=DEFAULT_POLL_TABLE_MAX_NUM_RETRIES
+):
     logger.info("Polling table: {}".format(table_spec.name))
 
     success = True
@@ -174,41 +184,50 @@ def poll_table(table_spec):
 
         cb = table_spec.status_to_cb.get(record.status)
 
-        if cb is not None:
-            try:
-                cb(record)  # noqa: F841
-            except Exception:
-                logger.exception(
-                    "Callback '{}' for record failed: {}".format(
-                        cb.__qualname__,
-                        record.id,
-                    )
-                )
-                success = False
-
-            if original_id != record.id:
-                raise ValueError(
-                    (
-                        "Callback '{}' modified the ID of the record: "
-                        "original={}, new={}"
-                    ).format(
-                        cb.__qualname__,
-                        original_id,
-                        record.id,
-                    )
-                )
-        else:
+        if cb is None:
             logger.info(
                 "No callback for record with status '{}': {}".format(
                     record.status,
                     record.id,
                 )
             )
+            continue
+
+        for num_retries in range(max_num_retries):
+            try:
+                cb(record)  # noqa: F841
+                break
+            except Exception:
+                logger.exception(
+                    (
+                        "Callback '{}' for record failed (num retries {}): {}"
+                    ).format(
+                        num_retries,
+                        cb.__qualname__,
+                        record.id,
+                    )
+                )
+        else:
+            logger.error(
+                "Callback '{}' for record did not succeed: {}".format(
+                    cb.__qualname__, record.id
+                )
+            )
+            success = False
+
+        if original_id != record.id:
+            raise ValueError(
+                (
+                    "Callback '{}' modified the ID of the record: "
+                    "original={}, new={}"
+                ).format(
+                    cb.__qualname__,
+                    original_id,
+                    record.id,
+                )
+            )
 
         record.meta_last_seen_status = original_status
-
-        # TODO : consider retrying on errors or not updating the last seen
-        # status
 
         # Update the record in airtable to reflect local modifications
         client.update(table_spec, record)
