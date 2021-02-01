@@ -14,12 +14,21 @@ def main():
     )
     parser.add_argument("action", choices=["poll"])
     parser.add_argument(
-        "--table", type=lambda val: tables.Table[val.upper()], required=True
+        "--table",
+        type=lambda val: tables.Table[val.upper()],
+        required=True,
+        help="Which Airtable table to use",
+    )
+    parser.add_argument(
+        "--live",
+        type=bool,
+        default=False,
+        help="Enables updating airtable records",
     )
 
     args = parser.parse_args()
 
-    client = airtable.AirtableClient()
+    client = airtable.AirtableClient(read_only=not args.live)
 
     succeeded = True
     if args.action == "poll":

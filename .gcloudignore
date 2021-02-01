@@ -18,6 +18,8 @@ node_modules
 
 # Custom
 
-!config.json
+!configs/
 .vscode/
 venv/
+__pycache__/
+*.py[cod]

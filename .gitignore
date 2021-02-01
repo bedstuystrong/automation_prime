@@ -1,4 +1,5 @@
 __pycache__/
-config.json
+configs/
 venv/
 *.egg-info/
+*.swp

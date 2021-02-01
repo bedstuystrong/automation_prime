@@ -45,9 +45,10 @@ class InboundModel(MetaBaseModel):
 
 
 class VolunteerModel(MetaBaseModel):
-    name: str = pydantic.Field(alias="Name")
-    phone_number: str = pydantic.Field(alias="Phone Number")
-    email: str = pydantic.Field(alias="Email Address")
+    name: Optional[str] = pydantic.Field(alias="Name")
+    # TODO
+    phone_number: Optional[str] = pydantic.Field(alias="Phone Number")
+    email: Optional[str] = pydantic.Field(alias="Email Address")
     # TODO : this is the only slack handle field that matters, remove the
     # old one
     slack_handle: Optional[str] = pydantic.Field(
@@ -57,6 +58,12 @@ class VolunteerModel(MetaBaseModel):
         alias="Email Address (from Slack)"
     )
     slack_user_id: Optional[str] = pydantic.Field(alias="Slack User ID")
+    intake_tickets: List[str] = pydantic.Field(
+        alias="Intake Volunteer tickets", default_factory=list
+    )
+
+    def get_email(self) -> Optional[str]:
+        return self.email if self.email is not None else self.slack_email
 
     @staticmethod
     def get_valid_statuses():
