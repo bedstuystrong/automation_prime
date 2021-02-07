@@ -32,6 +32,18 @@ POLL_MESSAGE_BODY = "Trigger poll"
 
 @contextlib.contextmanager
 def use_gcloud_project(project_id):
+    config_get_proc = subprocess.run(
+        ["gcloud", "config", "get-value", "project"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        encoding="utf-8",
+    )
+
+    original_project_id = config_get_proc.stdout.strip()
+    if original_project_id == "":
+        original_project_id = None
+
     try:
         subprocess.run(
             ["gcloud", "config", "set", "project", project_id],
@@ -39,10 +51,16 @@ def use_gcloud_project(project_id):
         )
         yield
     finally:
-        subprocess.run(
-            ["gcloud", "config", "unset", "project"],
-            check=True,
-        )
+        if original_project_id is not None:
+            subprocess.run(
+                ["gcloud", "config", "set", "project", original_project_id],
+                check=True,
+            )
+        else:
+            subprocess.run(
+                ["gcloud", "config", "unset", "project"],
+                check=True,
+            )
 
 
 ############

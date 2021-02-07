@@ -1,6 +1,7 @@
 # TODO : add a script that reads through all of the airtable data and validates
 # it
 
+import argparse
 import sys
 from collections import defaultdict
 
@@ -10,54 +11,55 @@ from .. import tables
 from ..utils import airtable
 
 
-def main():
-    client = airtable.Client()
+def validate_table(client, table):
+    validation_issues = defaultdict(list)
 
-    validation_errors = defaultdict(int)
-
-    PAGE_MOD = 500
-    for table in list(tables.Table):
-        i = 0
-        for page in client._get_client(table.value).get_iter():
-            for raw in page:
-                try:
-                    rec = table.value.model_cls.from_airtable(  # noqa: F841
-                        raw
+    for page in client._get_client(table).get_iter():
+        for raw in page:
+            try:
+                table.model_cls.from_airtable(raw)
+            except pydantic.error_wrappers.ValidationError as e:
+                for issue in e.errors():
+                    validation_issues[(issue["loc"], issue["type"])].append(
+                        {"id": raw["id"], **raw["fields"]}
                     )
 
-                    if i % PAGE_MOD == 0:
-                        print("Processed {} records...".format(i))
+    for (
+        validation_error_loc,
+        validation_error_type,
+    ), failed_raw_records in validation_issues.items():
+        print(
+            "- {} ({}):".format(
+                ", ".join(validation_error_loc), validation_error_type
+            )
+        )
 
-                    i += 1
-                except pydantic.error_wrappers.ValidationError as e:
-                    for val in e.errors():
-                        assert val.keys() == {"loc", "msg", "type"}
-                        validation_errors[
-                            (val["loc"], val["msg"], val["type"])
-                        ] += 1
-                except StopIteration:
-                    break
-
-    had_errors = False
-
-    if len(validation_errors) > 0:
-        had_errors = True
-
-        print("Validation Errors:")
-
-        for (loc, msg, t), num in sorted(
-            validation_errors.items(), key=lambda tup: tup[1]
-        ):
+        for raw in failed_raw_records:
             print(
-                f"\t- Encountered {num} validation errors: loc={loc}, msg={msg}, type={t}"  # noqa: E501
+                "   + {}: {}".format(
+                    raw["id"],
+                    ", ".join(
+                        f"{loc}={repr(raw.get(loc))}" for loc in validation_error_loc
+                    ),
+                )
             )
 
-    if not had_errors:
-        print("All Good!")
-        sys.exit(0)
-    else:
-        print("Failed")
-        sys.exit(1)
+
+def main():
+    parser = argparse.ArgumentParser(
+        "Validates all of the data in airtable with the models"
+    )
+    parser.add_argument(
+        "--table",
+        choices=[t.name.lower() for t in tables.Table],
+        required=True,
+    )
+
+    args = parser.parse_args()
+
+    client = airtable.AirtableClient()
+
+    validate_table(client, tables.Table[args.table.upper()].value)
 
 
 if __name__ == "__main__":

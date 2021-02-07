@@ -11,6 +11,7 @@ Includes:
 """
 
 import abc
+import datetime
 import logging
 from typing import Callable, Dict, Optional, Set, Type
 
@@ -38,17 +39,23 @@ DEFAULT_POLL_TABLE_MAX_NUM_RETRIES = 3
 # TODO : consider not allowing users change the id field
 class BaseModel(pydantic.BaseModel, abc.ABC):
     id: str
+    created_at: datetime.datetime
 
     class Config:
         allow_population_by_field_name = True
 
     @classmethod
     def from_airtable(cls, raw_dict):
-        return cls(id=raw_dict["id"], **raw_dict["fields"])
+        return cls(
+            id=raw_dict["id"],
+            created_at=raw_dict["createdTime"],
+            **raw_dict["fields"],
+        )
 
     def to_airtable(self):
         fields = self.dict(by_alias=True, exclude_none=True)
         del fields["id"]
+        del fields["created_at"]
 
         return {
             "id": self.id,

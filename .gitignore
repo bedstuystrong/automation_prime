@@ -3,3 +3,4 @@ configs/
 venv/
 *.egg-info/
 *.swp
+.DS_Store
