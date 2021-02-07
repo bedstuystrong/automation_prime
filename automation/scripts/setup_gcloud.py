@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import json
 import subprocess
 import logging
@@ -6,16 +7,60 @@ from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 
-RUNTIME = "python38"
+from .. import config  # noqa: E402
+
+##########
+# CONSTS #
+##########
+
+RUNTIME = "python39"
 SOURCE = str(Path(__file__).resolve().parents[2])
 
-POLL_FUNCTION_NAMES = {"poll_inbounds"}
-HTTP_FUNCTION_NAMES = {"handle_inbound_message"}
+POLL_FUNCTION_NAMES = set(["poll_members"])
+HTTP_FUNCTION_NAMES = set([])
 
 POLL_TOPIC_NAME = "POLL_TOPIC"
 POLL_SCHEDULE = "* * * * *"
 POLL_TRIGGER_JOB_NAME = "INBOUND_POLL_TRIGGER"
 POLL_MESSAGE_BODY = "Trigger poll"
+
+
+#########
+# UTILS #
+#########
+
+
+@contextlib.contextmanager
+def use_gcloud_project(project_id):
+    config_get_proc = subprocess.run(
+        ["gcloud", "config", "get-value", "project"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        encoding="utf-8",
+    )
+
+    original_project_id = config_get_proc.stdout.strip()
+    if original_project_id == "":
+        original_project_id = None
+
+    try:
+        subprocess.run(
+            ["gcloud", "config", "set", "project", project_id],
+            check=True,
+        )
+        yield
+    finally:
+        if original_project_id is not None:
+            subprocess.run(
+                ["gcloud", "config", "set", "project", original_project_id],
+                check=True,
+            )
+        else:
+            subprocess.run(
+                ["gcloud", "config", "unset", "project"],
+                check=True,
+            )
 
 
 ############
@@ -167,8 +212,8 @@ def reset():
             check=True,
         )
 
-    deployed_functions = (
-        list_functions() & POLL_FUNCTION_NAMES & HTTP_FUNCTION_NAMES
+    deployed_functions = list_functions() & (
+        POLL_FUNCTION_NAMES | HTTP_FUNCTION_NAMES
     )
 
     for func_name in deployed_functions:
@@ -214,14 +259,21 @@ def main():
 
     args = parser.parse_args()
 
-    update()
+    google_cloud_config = config.Config.load().google_cloud
 
-    if args.command == "deploy":
-        deploy()
-    elif args.command == "reset":
-        reset()
-    else:
-        assert False
+    if google_cloud_config is None:
+        parser.error(
+            "Provided config path does not contain configuration for google "
+            "cloud."
+        )
+
+    with use_gcloud_project(google_cloud_config.project_id):
+        if args.command == "deploy":
+            deploy()
+        elif args.command == "reset":
+            reset()
+        else:
+            assert False
 
 
 if __name__ == "__main__":

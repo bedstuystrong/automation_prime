@@ -37,7 +37,7 @@ This section covers steps required for setting up the environment for the automa
 
 ### Staging Airtable
 
-1. Duplicate production base, including records
+1. Duplicate production base, including records and excluding comments
 2. Rename base to "STAGING"
 3. Add automation bot user to staging base (with editor permissions)
 4. Get base ID: go to airtable.com/api, select the staging base, and copy the base ID into your `config.json`
@@ -46,6 +46,6 @@ This section covers steps required for setting up the environment for the automa
 
 - All tables must have a new field `_meta_last_seen_status` (single line text type)
 - NOTE that as opposed to the vintage automation, all records with `{Status} = BLANK()` are ignored
-- Volunteers table:
+- Members table:
     - Add a new status choice: `New`
     - Update form to include status field with `New` as the only option

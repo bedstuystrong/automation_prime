@@ -1,3 +1,8 @@
+"""Pytest configuration for tests
+
+Primarily for fixtures and mocks used in multiple test files
+"""
+
 import logging
 import pytest
 from unittest import mock
@@ -21,14 +26,24 @@ def _setup_logging(caplog):
 
 
 @pytest.fixture
-def mock_slack():
-    with mock.patch.object(slack, "SlackClient", autospec=True) as mock_client:
+def mock_slack_client():
+    with mock.patch(
+        f"{slack.__name__}.SlackClient", autospec=True
+    ) as mock_client:
         yield mock_client
 
 
 @pytest.fixture
 def mock_airtable_client():
-    with mock.patch.object(
-        airtable, "AirtableClient", autospec=True
+    with mock.patch(
+        f"{airtable.__name__}.AirtableClient", autospec=True
     ) as mock_client:
+        yield mock_client
+
+
+@pytest.fixture
+def mock_sendgrid_client():
+    with mock.patch(
+        "sendgrid.SendGridAPIClient", autospec=True
+    ) as mock_client, mock.patch("sendgrid.helpers.mail.Mail", autospec=True):
         yield mock_client

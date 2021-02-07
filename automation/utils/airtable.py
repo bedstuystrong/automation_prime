@@ -11,6 +11,7 @@ Includes:
 """
 
 import abc
+import datetime
 import logging
 from typing import Callable, Dict, Optional, Set, Type
 
@@ -38,17 +39,23 @@ DEFAULT_POLL_TABLE_MAX_NUM_RETRIES = 3
 # TODO : consider not allowing users change the id field
 class BaseModel(pydantic.BaseModel, abc.ABC):
     id: str
+    created_at: datetime.datetime
 
     class Config:
         allow_population_by_field_name = True
 
     @classmethod
     def from_airtable(cls, raw_dict):
-        return cls(id=raw_dict["id"], **raw_dict["fields"])
+        return cls(
+            id=raw_dict["id"],
+            created_at=raw_dict["createdTime"],
+            **raw_dict["fields"],
+        )
 
     def to_airtable(self):
         fields = self.dict(by_alias=True, exclude_none=True)
         del fields["id"]
+        del fields["created_at"]
 
         return {
             "id": self.id,
@@ -106,7 +113,8 @@ class TableSpec(pydantic.BaseModel):
 
 
 class AirtableClient:
-    def __init__(self):
+    def __init__(self, read_only=False):
+        self._read_only = read_only
         self._table_name_to_client = {}
 
     def _get_client(self, table_spec):
@@ -154,6 +162,9 @@ class AirtableClient:
                 yield table_spec.model_cls.from_airtable(raw)
 
     def update(self, table_spec, model):
+        if self._read_only:
+            return
+
         self._get_client(table_spec).update(
             model.id,
             model.to_airtable()["fields"],
@@ -179,57 +190,59 @@ def poll_table(
             "Processing '{}' record: {}".format(table_spec.name, record)
         )
 
-        original_id = record.id
-        original_status = record.status
+        try:
+            original_id = record.id
+            original_status = record.status
 
-        cb = table_spec.status_to_cb.get(record.status)
+            cb = table_spec.status_to_cb.get(record.status)
 
-        if cb is None:
-            logger.info(
-                "No callback for record with status '{}': {}".format(
-                    record.status,
-                    record.id,
-                )
-            )
-            continue
-
-        for num_retries in range(max_num_retries):
-            try:
-                cb(record)  # noqa: F841
-                break
-            except Exception:
-                logger.exception(
-                    (
-                        "Callback '{}' for record failed (num retries {}): {}"
-                    ).format(
-                        num_retries,
-                        cb.__qualname__,
+            if cb is None:
+                logger.info(
+                    "No callback for record with status '{}': {}".format(
+                        record.status,
                         record.id,
                     )
                 )
-        else:
-            logger.error(
-                "Callback '{}' for record did not succeed: {}".format(
-                    cb.__qualname__, record.id
+                continue
+
+            for num_retries in range(max_num_retries):
+                try:
+                    cb(record)  # noqa: F841
+                    break
+                except Exception:
+                    logger.exception(
+                        (
+                            "Callback '{}' for record failed "
+                            "(num retries {}): {}"
+                        ).format(
+                            num_retries,
+                            cb.__qualname__,
+                            record.id,
+                        )
+                    )
+            else:
+                logger.error(
+                    "Callback '{}' for record did not succeed: {}".format(
+                        cb.__qualname__, record.id
+                    )
                 )
-            )
-            success = False
+                success = False
 
-        if original_id != record.id:
-            raise ValueError(
-                (
-                    "Callback '{}' modified the ID of the record: "
-                    "original={}, new={}"
-                ).format(
-                    cb.__qualname__,
-                    original_id,
-                    record.id,
+            if original_id != record.id:
+                raise ValueError(
+                    (
+                        "Callback '{}' modified the ID of the record: "
+                        "original={}, new={}"
+                    ).format(
+                        cb.__qualname__,
+                        original_id,
+                        record.id,
+                    )
                 )
-            )
+        finally:
+            record.meta_last_seen_status = original_status
 
-        record.meta_last_seen_status = original_status
-
-        # Update the record in airtable to reflect local modifications
-        client.update(table_spec, record)
+            # Update the record in airtable to reflect local modifications
+            client.update(table_spec, record)
 
     return success
