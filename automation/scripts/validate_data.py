@@ -24,25 +24,33 @@ def validate_table(client, table):
                         {"id": raw["id"], **raw["fields"]}
                     )
 
-    for (
-        validation_error_loc,
-        validation_error_type,
-    ), failed_raw_records in validation_issues.items():
-        print(
-            "- {} ({}):".format(
-                ", ".join(validation_error_loc), validation_error_type
-            )
-        )
+    if len(validation_issues) > 0:
+        print("Found the following validation errors:")
 
-        for raw in failed_raw_records:
+        for (
+            validation_error_loc,
+            validation_error_type,
+        ), failed_raw_records in validation_issues.items():
             print(
-                "   + {}: {}".format(
-                    raw["id"],
-                    ", ".join(
-                        f"{loc}={repr(raw.get(loc))}" for loc in validation_error_loc
-                    ),
+                "- {} ({}):".format(
+                    ", ".join(validation_error_loc), validation_error_type
                 )
             )
+
+            for raw in failed_raw_records:
+                print(
+                    "   + {}: {}".format(
+                        raw["id"],
+                        ", ".join(
+                            f"{loc}={repr(raw.get(loc))}"
+                            for loc in validation_error_loc
+                        ),
+                    )
+                )
+
+        return False
+    else:
+        return True
 
 
 def main():
@@ -59,7 +67,10 @@ def main():
 
     client = airtable.AirtableClient()
 
-    validate_table(client, tables.Table[args.table.upper()].value)
+    succeeded = validate_table(client, tables.Table[args.table.upper()].value)
+
+    print("Succeeded." if succeeded else "Failed!")
+    sys.exit(0 if succeeded else 1)
 
 
 if __name__ == "__main__":
