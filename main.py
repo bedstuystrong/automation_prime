@@ -13,5 +13,5 @@ from automation.utils import airtable  # noqa: E402
 
 def poll_members(event, context):
     airtable.poll_table(
-        airtable.AirtableClient(), tables.Table.VOLUNTEERS.value
+        airtable.AirtableClient(), tables.Table.MEMBERS.value
     )

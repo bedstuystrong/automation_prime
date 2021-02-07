@@ -1,7 +1,7 @@
 import enum
 
 from . import models
-from .functions import inbound, volunteers
+from .functions import inbound, members
 from .utils import airtable
 
 
@@ -11,8 +11,8 @@ class Table(enum.Enum):
         model_cls=models.InboundModel,
         status_to_cb={None: inbound.on_new},
     )
-    VOLUNTEERS = airtable.TableSpec(
-        name="volunteers",
-        model_cls=models.VolunteerModel,
-        status_to_cb={"New": volunteers.on_new},
+    MEMBERS = airtable.TableSpec(
+        name="members",
+        model_cls=models.MemberModel,
+        status_to_cb={"New": members.on_new},
     )

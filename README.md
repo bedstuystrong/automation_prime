@@ -46,6 +46,6 @@ This section covers steps required for setting up the environment for the automa
 
 - All tables must have a new field `_meta_last_seen_status` (single line text type)
 - NOTE that as opposed to the vintage automation, all records with `{Status} = BLANK()` are ignored
-- Volunteers table:
+- Members table:
     - Add a new status choice: `New`
     - Update form to include status field with `New` as the only option

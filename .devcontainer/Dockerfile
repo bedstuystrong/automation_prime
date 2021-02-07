@@ -26,8 +26,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
     && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
     && apt-get update -y \
-    && apt-get -y --no-install-recommends install google-cloud-sdk \
-    && apt-get -y --only-upgrade install google-cloud-sdk-firestore-emulator google-cloud-sdk-skaffold google-cloud-sdk-app-engine-python google-cloud-sdk-spanner-emulator google-cloud-sdk-app-engine-java google-cloud-sdk google-cloud-sdk-kubectl-oidc google-cloud-sdk-anthos-auth google-cloud-sdk-cbt google-cloud-sdk-pubsub-emulator google-cloud-sdk-app-engine-grpc google-cloud-sdk-cloud-build-local google-cloud-sdk-kpt google-cloud-sdk-config-connector google-cloud-sdk-app-engine-go kubectl google-cloud-sdk-bigtable-emulator google-cloud-sdk-datastore-emulator google-cloud-sdk-kind google-cloud-sdk-minikube google-cloud-sdk-datalab google-cloud-sdk-app-engine-python-extras
+    && apt-get -y --no-install-recommends install google-cloud-sdk
 
 
 COPY requirements.txt /tmp/pip-tmp/

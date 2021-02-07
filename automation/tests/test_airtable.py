@@ -2,7 +2,11 @@ from unittest import mock
 
 from ..utils import airtable
 
-from .helpers import get_random_string, get_random_airtable_id
+from .helpers import (
+    get_random_string,
+    get_random_airtable_id,
+    get_random_created_at,
+)
 
 #########
 # UTILS #
@@ -37,6 +41,7 @@ def test_poll_table_basic(mock_airtable_client):
     # Test data
     test_model = FooModel(
         id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
         status="New",
     )
 
@@ -100,6 +105,7 @@ def test_poll_table_retries(mock_airtable_client):
     """Test the case where all callback calls fail"""
     test_model = FooModel(
         id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
         status="New",
     )
 
@@ -130,6 +136,7 @@ def test_poll_table_retries_transient(mock_airtable_client):
     """Test the case where all but the last callback calls fail"""
     test_model = FooModel(
         id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
         status="New",
     )
 

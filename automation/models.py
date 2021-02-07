@@ -12,9 +12,9 @@ class InboundModel(MetaBaseModel):
     voicemail_recording: Optional[str] = pydantic.Field(
         alias="Voicemail Recording"
     )
-    # TODO : intake volunteer shouldn't be one-only
-    intake_volunteer: List[str] = pydantic.Field(
-        default_factory=list, alias="Intake Volunteer"
+    # TODO : intake member shouldn't be one-only
+    intake_member: List[str] = pydantic.Field(
+        default_factory=list, alias="Intake Member"
     )
     intake_time: str = pydantic.Field(alias="Intake Time")
     other_inbounds: List[str] = pydantic.Field(
@@ -44,7 +44,7 @@ class InboundModel(MetaBaseModel):
             raise ValueError("Invalid method value: {}".format(v))
 
 
-class VolunteerModel(MetaBaseModel):
+class MemberModel(MetaBaseModel):
     name: str = pydantic.Field(alias="Name")
     # TODO : fix data quality issues and make this non-optional
     email: Optional[str] = pydantic.Field(alias="Email Address")
@@ -59,10 +59,10 @@ class VolunteerModel(MetaBaseModel):
     )
     slack_user_id: Optional[str] = pydantic.Field(alias="Slack User ID")
     intake_tickets: List[str] = pydantic.Field(
-        alias="Intake Volunteer tickets", default_factory=list
+        alias="Intake Member tickets", default_factory=list
     )
     delivery_tickets: List[str] = pydantic.Field(
-        alias="Delivery Volunteer tickets", default_factory=list,
+        alias="Delivery Member tickets", default_factory=list,
     )
 
     def get_email(self) -> Optional[str]:
