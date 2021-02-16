@@ -13,3 +13,9 @@ MEMBERS = airtable.TableSpec(
     model_cls=models.MemberModel,
     status_to_cb={"New": members.NewCallback},
 )
+
+INTAKE_TICKETS = airtable.TableSpec(
+    name="intake_tickets",
+    model_cls=models.IntakeTicketModel,
+    status_to_cb=dict(),
+)

@@ -75,3 +75,31 @@ class MemberModel(MetaBaseModel):
             "New",
             "Processed",
         }
+
+
+class IntakeTicketModel(MetaBaseModel):
+    ticket_id: str = pydantic.Field(alias="Ticket ID")
+    requestor: str = pydantic.Field(
+        alias="Requestor First Name and Last Initial"
+    )
+    status: str = pydantic.Field(alias="Status")
+    phone_number: str = pydantic.Field(alias="Phone Number")
+    vulnerability: List[str] = pydantic.Field(
+        alias="Vulnerability", default_factory=list
+    )
+
+    @staticmethod
+    def get_valid_statuses():
+        return {
+            "Seeking Volunteer",
+            "Assigned / In Progress",
+            "Complete",
+            "Not Bed-Stuy",
+            "Assistance No Longer Required",
+            "Cannot Reach / Out of Service",
+            "Bulk Delivery Scheduled",
+            "Bulk Delivery Confirmed",
+            "AC Needed",
+            "AC Delivered",
+            "Seeking Other Goods",
+        }
