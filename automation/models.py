@@ -6,7 +6,7 @@ from .utils.airtable import MetaBaseModel
 
 
 class InboundModel(MetaBaseModel):
-    method: str = pydantic.Field(alias="Method of Contact")
+    method: Optional[str] = pydantic.Field(alias="Method of Contact")
     phone_number: Optional[str] = pydantic.Field(alias="Phone Number")
     message: Optional[str] = pydantic.Field(alias="Message")
     voicemail_recording: Optional[str] = pydantic.Field(
@@ -62,7 +62,8 @@ class MemberModel(MetaBaseModel):
         alias="Intake Member tickets", default_factory=list
     )
     delivery_tickets: List[str] = pydantic.Field(
-        alias="Delivery Member tickets", default_factory=list,
+        alias="Delivery Member tickets",
+        default_factory=list,
     )
 
     def get_email(self) -> Optional[str]:
