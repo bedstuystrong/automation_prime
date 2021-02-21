@@ -166,6 +166,10 @@ class AirtableClient:
         )
         self.table_spec = table_spec
 
+    def get(self, record_id):
+        raw = self.client.get(record_id)
+        return self.table_spec.model_cls.from_airtable(raw)
+
     def get_all(self, formula=None):
         return (
             self.table_spec.model_cls.from_airtable(raw)

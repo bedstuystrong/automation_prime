@@ -34,6 +34,7 @@ class SendgridConfig(pydantic.BaseModel):
     api_key: str
     from_email: str
     from_domain: str
+    reply_to: str
 
 
 class Config(pydantic.BaseModel):

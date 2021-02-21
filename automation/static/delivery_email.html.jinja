@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+
+Hi {% for volunteer in delivery_volunteers %}{{ volunteer.name }}{% endfor %}!
+
+Thank you for etc. etc.
+
+<ul>
+<li><strong>Neighbor:</strong> {{ ticket.request_name }}</li>
+<li><strong>Household Size:</strong> {{ ticket.household_size }}</li>
+<li><strong>Food Options:</strong> {{ ticket.food_options }}</li>
+</ul>
+
+</body>
+</html>
