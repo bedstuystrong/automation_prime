@@ -1,5 +1,6 @@
 import logging
 
+from python_http_client.exceptions import BadRequestsError
 from requests.exceptions import HTTPError
 import sendgrid
 
@@ -31,6 +32,7 @@ sendgrid_client = sendgrid.SendGridAPIClient(conf.sendgrid.api_key)
 
 
 def send_delivery_email(request):
+    log = logging.getLogger("send_delivery_email")
     try:
         record_id = request.args["record_id"]
     except KeyError:
@@ -62,6 +64,12 @@ def send_delivery_email(request):
     email.add_cc(conf.sendgrid.reply_to)
     email.reply_to = conf.sendgrid.reply_to
 
-    sendgrid_client.send(email)
+    try:
+        sendgrid_client.send(email)
+    except BadRequestsError as e:
+        log.error(
+            f"Error sending email: {e.status_code} {e.reason}", exc_info=True
+        )
+        return f"Error sending email: {e.reason}", e.status_code
 
     return f"Sending {email.subject}", 200
