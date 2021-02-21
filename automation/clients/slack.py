@@ -1,10 +1,9 @@
+from automation.config import SlackConfig
 import enum
 from typing import Optional
 
 import pydantic
 import slack_sdk
-
-from .. import config
 
 ##########
 # MODELS #
@@ -84,10 +83,8 @@ class SlackErrors(enum.Enum):
 #    slack = SlackClient()
 #    user = slack.users.find(email='leif@example.com')
 class SlackClient:
-    def __init__(self):
-        self._slack_sdk_client = slack_sdk.WebClient(
-            token=config.Config.load().slack.api_key
-        )
+    def __init__(self, conf: SlackConfig):
+        self._slack_sdk_client = slack_sdk.WebClient(token=conf.api_key)
 
     def _slack_sdk_wrapper(
         self, slack_sdk_func_name, model_type, data_key, single_result=False

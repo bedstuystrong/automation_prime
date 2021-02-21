@@ -1,8 +1,9 @@
 from unittest import mock
 
-from ..utils import airtable
+from ..clients import airtable
 
 from .helpers import (
+    TEST_CONFIG,
     get_random_string,
     get_random_airtable_id,
     get_random_created_at,
@@ -37,132 +38,135 @@ def get_foo_table_spec(status_to_cb=None):
 #########
 
 
-def test_poll_table_basic(mock_airtable_client):
-    # Test data
-    test_model = FooModel(
-        id=get_random_airtable_id(),
-        created_at=get_random_created_at(),
-        status="New",
-    )
+def test_poll_table_basic():
+    # TODO: refactor AirtableClient logic more and get rid of the mocks
+    with mock.patch(
+        f"{airtable.__name__}.AirtableClient.get_all_with_new_status"
+    ) as mock_get, mock.patch(
+        f"{airtable.__name__}.AirtableClient.update"
+    ) as mock_update:
+        # Test data
+        test_model = FooModel(
+            id=get_random_airtable_id(),
+            created_at=get_random_created_at(),
+            status="New",
+        )
 
-    # Callbacks
-    def on_new(foo_model):
-        assert foo_model.id == test_model.id
-        assert foo_model.status == "New"
+        # Callbacks
+        def on_new(foo_model):
+            assert foo_model.id == test_model.id
+            assert foo_model.status == "New"
 
-        foo_model.status = "Processed"
+            foo_model.status = "Processed"
 
-    def on_processed(foo_model):
-        assert foo_model.id == test_model.id
-        assert foo_model.status == "Processed"
+        def on_processed(foo_model):
+            assert foo_model.id == test_model.id
+            assert foo_model.status == "Processed"
 
-    test_spec = get_foo_table_spec({"New": on_new, "Processed": on_processed})
+        test_spec = get_foo_table_spec(
+            {
+                "New": lambda conf: on_new,
+                "Processed": lambda conf: on_processed,
+            }
+        )
 
-    # Mocks
-    def mock_poll(table_spec):
-        assert table_spec.name == "foo"
+        # Mocks
+        def mock_poll():
+            if test_model.status != test_model.meta_last_seen_status:
+                return [test_model]
+            else:
+                return []
 
-        if test_model.status != test_model.meta_last_seen_status:
-            return [test_model]
-        else:
-            return []
+        mock_get.side_effect = mock_poll
+        client = test_spec.get_airtable_client(TEST_CONFIG.airtable)
+        # Test
+        poll_res = client.poll_table(TEST_CONFIG)
 
-    mock_airtable_client.poll.side_effect = mock_poll
+        assert poll_res
+        assert test_model.status == "Processed"
+        assert test_model.meta_last_seen_status == "New"
+        assert mock_update.call_count == 1
 
-    # Test
-    poll_res = airtable.poll_table(
-        mock_airtable_client,
-        test_spec,
-    )
+        poll_res = client.poll_table(TEST_CONFIG)
 
-    assert poll_res
-    assert test_model.status == "Processed"
-    assert test_model.meta_last_seen_status == "New"
-    assert mock_airtable_client.update.call_count == 1
+        assert poll_res
+        assert test_model.status == "Processed"
+        assert test_model.meta_last_seen_status == "Processed"
+        assert mock_update.call_count == 2
 
-    poll_res = airtable.poll_table(
-        mock_airtable_client,
-        test_spec,
-    )
+        # NOTE that this call should be a no-op
+        poll_res = client.poll_table(TEST_CONFIG)
 
-    assert poll_res
-    assert test_model.status == "Processed"
-    assert test_model.meta_last_seen_status == "Processed"
-    assert mock_airtable_client.update.call_count == 2
-
-    # NOTE that this call should be a no-op
-    poll_res = airtable.poll_table(
-        mock_airtable_client,
-        test_spec,
-    )
-
-    assert poll_res
-    assert mock_airtable_client.update.call_count == 2
-    assert mock_airtable_client.poll.call_count == 3
+        assert poll_res
+        assert mock_update.call_count == 2
+        assert mock_get.call_count == 3
 
 
-def test_poll_table_retries(mock_airtable_client):
+def test_poll_table_retries():
     """Test the case where all callback calls fail"""
-    test_model = FooModel(
-        id=get_random_airtable_id(),
-        created_at=get_random_created_at(),
-        status="New",
-    )
+    with mock.patch(
+        f"{airtable.__name__}.AirtableClient.get_all_with_new_status"
+    ) as mock_get, mock.patch(
+        f"{airtable.__name__}.AirtableClient.update"
+    ) as mock_update:
+        test_model = FooModel(
+            id=get_random_airtable_id(),
+            created_at=get_random_created_at(),
+            status="New",
+        )
 
-    mock_airtable_client.poll.side_effect = lambda table_spec: [test_model]
+        mock_get.side_effect = lambda: [test_model]
 
-    # NOTE that we have to create the mock from a no-op lambda to set magic
-    # attributes used for logging in `poll_table`
-    on_new_mock = mock.MagicMock(
-        spec=lambda: None, side_effect=Exception("Fuuuuuu")
-    )
+        # NOTE that we have to create the mock from a no-op lambda to set magic
+        # attributes used for logging in `poll_table`
+        on_new_mock = mock.MagicMock(
+            spec=lambda: None, side_effect=Exception("Fuuuuuu")
+        )
 
-    test_spec = get_foo_table_spec({"New": on_new_mock})
+        test_spec = get_foo_table_spec({"New": lambda conf: on_new_mock})
 
-    poll_res = airtable.poll_table(
-        mock_airtable_client,
-        test_spec,
-        max_num_retries=3,
-    )
+        client = test_spec.get_airtable_client(TEST_CONFIG.airtable)
+        poll_res = client.poll_table(TEST_CONFIG, max_num_retries=3)
 
-    assert not poll_res
-    assert test_model.status == "New"
-    assert test_model.meta_last_seen_status == "New"
-    assert mock_airtable_client.update.call_count == 1
-    assert on_new_mock.call_count == 3
+        assert not poll_res
+        assert test_model.status == "New"
+        assert test_model.meta_last_seen_status == "New"
+        assert mock_update.call_count == 1
+        assert on_new_mock.call_count == 3
 
 
-def test_poll_table_retries_transient(mock_airtable_client):
+def test_poll_table_retries_transient():
     """Test the case where all but the last callback calls fail"""
-    test_model = FooModel(
-        id=get_random_airtable_id(),
-        created_at=get_random_created_at(),
-        status="New",
-    )
+    with mock.patch(
+        f"{airtable.__name__}.AirtableClient.get_all_with_new_status"
+    ) as mock_get, mock.patch(
+        f"{airtable.__name__}.AirtableClient.update"
+    ) as mock_update:
+        test_model = FooModel(
+            id=get_random_airtable_id(),
+            created_at=get_random_created_at(),
+            status="New",
+        )
 
-    mock_airtable_client.poll.side_effect = lambda table_spec: [test_model]
+        mock_get.side_effect = lambda: [test_model]
 
-    # NOTE that we have to create the mock from a no-op lambda to set magic
-    # attributes used for logging in `poll_table`
-    on_new_mock = mock.MagicMock(
-        spec=lambda: None,
-        side_effect=[
-            Exception("Fuuuuuu"),
-            Exception("Fuuuuuu"),
-            None,
-        ],
-    )
+        # NOTE that we have to create the mock from a no-op lambda to set magic
+        # attributes used for logging in `poll_table`
+        on_new_mock = mock.MagicMock(
+            spec=lambda: None,
+            side_effect=[
+                Exception("Fuuuuuu"),
+                Exception("Fuuuuuu"),
+                None,
+            ],
+        )
 
-    test_spec = get_foo_table_spec({"New": on_new_mock})
+        test_spec = get_foo_table_spec({"New": lambda conf: on_new_mock})
+        client = test_spec.get_airtable_client(TEST_CONFIG.airtable)
+        poll_res = client.poll_table(TEST_CONFIG, max_num_retries=3)
 
-    poll_res = airtable.poll_table(
-        mock_airtable_client,
-        test_spec,
-        max_num_retries=3,
-    )
-
-    assert poll_res
-    assert test_model.status == "New"
-    assert test_model.meta_last_seen_status == "New"
-    assert mock_airtable_client.update.call_count == 1
-    assert on_new_mock.call_count == 3
+        assert poll_res
+        assert test_model.status == "New"
+        assert test_model.meta_last_seen_status == "New"
+        assert mock_update.call_count == 1
+        assert on_new_mock.call_count == 3

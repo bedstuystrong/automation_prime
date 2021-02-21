@@ -1,9 +1,32 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import random
 import string
 
+from .. import config
 from ..models import MemberModel
-from ..utils import slack
+from ..clients import slack
+
+
+TEST_CONFIG = config.Config(
+    **{
+        "airtable": {
+            "base_id": "",
+            "api_key": "",
+            "table_names": {
+                "inbound": "",
+                "volunteer": "",
+                "foo": "some table name",
+            },
+        },
+        "slack": {
+            "api_key": "",
+            "test_user_email": "",
+            "test_user_id": "",
+        },
+        "sendgrid": {"api_key": "", "from_email": "", "from_domain": ""},
+        "google_cloud": {"project_id": ""},
+    }
+)
 
 
 def get_random_string(length=16):
@@ -11,14 +34,14 @@ def get_random_string(length=16):
 
 
 def get_random_created_at():
-    import datetime
+    now = datetime.now()
+    one_year_ago = now - timedelta(days=365)
 
-    now = datetime.datetime.now()
-    one_year_ago = now - datetime.timedelta(days=365)
+    random_timestamp = random.uniform(
+        one_year_ago.timestamp(), now.timestamp()
+    )
 
-    random_timestamp = random.uniform(one_year_ago.timestamp(), now.timestamp())
-
-    return datetime.datetime.fromtimestamp(random_timestamp)
+    return datetime.fromtimestamp(random_timestamp)
 
 
 def get_random_airtable_id():

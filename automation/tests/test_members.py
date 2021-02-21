@@ -1,4 +1,8 @@
-from .helpers import get_random_slack_user_from_member, get_random_member
+from .helpers import (
+    TEST_CONFIG,
+    get_random_slack_user_from_member,
+    get_random_member,
+)
 from ..functions import members
 
 
@@ -20,7 +24,8 @@ def test_on_new(mock_slack_client, mock_sendgrid_client):
         mock_users_lookupByEmail
     )
 
-    members.on_new(test_member)
+    callback = members.NewCallback(TEST_CONFIG)
+    callback(test_member)
 
     assert test_member.slack_handle == test_slack_user.get_handle()
     assert test_member.slack_email == test_slack_user.profile.email

@@ -13,9 +13,6 @@ _ACTIVE_CONFIG_PATH = Path(
     os.environ.get(_CONFIG_ENV_VAR_NAME, _DEFAULT_CONFIG_PATH)
 )
 
-# Caches the config object loaded from disk
-_config = None
-
 
 class GoogleCloudConfig(pydantic.BaseModel):
     project_id: str
@@ -45,26 +42,14 @@ class Config(pydantic.BaseModel):
     sendgrid: SendgridConfig
     google_cloud: Optional[GoogleCloudConfig]
 
-    @classmethod
-    def load(cls):
-        global _config
 
-        if _config is None:
-            config_path = _CHECKOUT_ROOT / _ACTIVE_CONFIG_PATH
-
-            if not config_path.exists():
-                raise RuntimeError(
-                    (
-                        "Config provided via '{}' does not exist "
-                        "(default '{}): {}"
-                    ).format(
-                        _CONFIG_ENV_VAR_NAME,
-                        _DEFAULT_CONFIG_PATH,
-                        config_path,
-                    )
-                )
-
-            with open(config_path, "r", encoding="utf-8") as f:
-                _config = cls(**json.loads(f.read()))
-
-        return _config
+def load():
+    config_path = _CHECKOUT_ROOT / _ACTIVE_CONFIG_PATH
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            return Config(**json.loads(f.read()))
+    except FileNotFoundError as e:
+        raise RuntimeError(
+            f"Config provided via '{_CONFIG_ENV_VAR_NAME}' does not exist "
+            f"(default '{_DEFAULT_CONFIG_PATH}'): {config_path}"
+        ) from e

@@ -7,17 +7,18 @@ from collections import defaultdict
 
 import pydantic
 
-from .. import tables
-from ..utils import airtable
+from .. import config, tables
 
 
-def validate_table(client, table):
+def validate_table(client):
     validation_issues = defaultdict(list)
 
-    for page in client._get_client(table).get_iter():
+    # TODO: Don't reach inside our client wrapper, maybe move this to
+    # AirtableClient?
+    for page in client.client.get_iter():
         for raw in page:
             try:
-                table.model_cls.from_airtable(raw)
+                client.table_spec.model_cls.from_airtable(raw)
             except pydantic.error_wrappers.ValidationError as e:
                 for issue in e.errors():
                     validation_issues[(issue["loc"], issue["type"])].append(
@@ -59,15 +60,16 @@ def main():
     )
     parser.add_argument(
         "--table",
-        choices=[t.name.lower() for t in tables.Table],
+        type=lambda val: getattr(tables, val.upper()),
         required=True,
     )
 
     args = parser.parse_args()
 
-    client = airtable.AirtableClient()
+    conf = config.load()
+    client = args.table.get_airtable_client(conf.airtable, read_only=True)
 
-    succeeded = validate_table(client, tables.Table[args.table.upper()].value)
+    succeeded = validate_table(client)
 
     print("Succeeded." if succeeded else "Failed!")
     sys.exit(0 if succeeded else 1)

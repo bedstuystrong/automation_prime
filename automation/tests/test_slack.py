@@ -1,27 +1,15 @@
 from .. import config
-from ..utils import slack
+from ..clients import slack
 
 import pytest
 
 
-@pytest.fixture
-def test_config():
-    return config.Config.load()
-
-
-@pytest.fixture
-def test_user_email(test_config):
-    return test_config.slack.test_user_email
-
-
-@pytest.fixture
-def test_user_id(test_config):
-    return test_config.slack.test_user_id
-
-
 @pytest.mark.skip(reason="Hits the slack API")
-def test_users_lookupByEmail(test_user_email, test_user_id):
-    client = slack.SlackClient()
+def test_users_lookupByEmail():
+    conf = config.load()
+    client = slack.SlackClient(conf.slack)
+    test_user_email = conf.slack.test_user_email
+    test_user_id = conf.slack.test_user_id
 
     user = client.users_lookupByEmail(email=test_user_email)
     assert user.id == test_user_id
