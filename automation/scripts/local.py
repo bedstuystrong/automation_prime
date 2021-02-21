@@ -4,8 +4,7 @@ import sys
 
 logging.basicConfig(level=logging.INFO)
 
-from .. import tables  # noqa: E402
-from ..utils import airtable  # noqa: E402
+from .. import config, tables  # noqa: E402
 
 
 def main():
@@ -15,7 +14,7 @@ def main():
     parser.add_argument("action", choices=["poll"])
     parser.add_argument(
         "--table",
-        type=lambda val: tables.Table[val.upper()],
+        type=lambda val: getattr(tables, val.upper()),
         required=True,
         help="Which Airtable table to use",
     )
@@ -28,11 +27,14 @@ def main():
 
     args = parser.parse_args()
 
-    client = airtable.AirtableClient(read_only=not args.live)
+    conf = config.load()
+    client = args.table.get_airtable_client(
+        conf.airtable, read_only=not args.live
+    )
 
     succeeded = True
     if args.action == "poll":
-        succeeded = airtable.poll_table(client, args.table.value)
+        succeeded = client.poll_table(conf)
     else:
         raise ValueError("Unsupported action: {}".format(args.action))
 

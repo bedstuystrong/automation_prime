@@ -7,7 +7,7 @@ import logging
 import pytest
 from unittest import mock
 
-from ..utils import slack, airtable
+from ..clients import slack
 
 #########
 # SETUP #
@@ -29,14 +29,6 @@ def _setup_logging(caplog):
 def mock_slack_client():
     with mock.patch(
         f"{slack.__name__}.SlackClient", autospec=True
-    ) as mock_client:
-        yield mock_client
-
-
-@pytest.fixture
-def mock_airtable_client():
-    with mock.patch(
-        f"{airtable.__name__}.AirtableClient", autospec=True
     ) as mock_client:
         yield mock_client
 

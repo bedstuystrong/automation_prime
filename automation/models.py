@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import pydantic
 
-from .utils.airtable import MetaBaseModel
+from .clients.airtable import MetaBaseModel
 
 
 class InboundModel(MetaBaseModel):

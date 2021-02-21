@@ -259,7 +259,7 @@ def main():
 
     args = parser.parse_args()
 
-    google_cloud_config = config.Config.load().google_cloud
+    google_cloud_config = config.load().google_cloud
 
     if google_cloud_config is None:
         parser.error(
