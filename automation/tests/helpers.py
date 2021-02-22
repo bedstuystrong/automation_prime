@@ -23,7 +23,12 @@ TEST_CONFIG = config.Config(
             "test_user_email": "",
             "test_user_id": "",
         },
-        "sendgrid": {"api_key": "", "from_email": "", "from_domain": ""},
+        "sendgrid": {
+            "api_key": "",
+            "from_email": "",
+            "from_domain": "",
+            "reply_to": "",
+        },
         "google_cloud": {"project_id": ""},
     }
 )
