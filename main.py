@@ -33,7 +33,6 @@ def send_delivery_email(request):
     cloud_logging.bind_trace_id(request, conf.google_cloud.project_id)
     try:
         email = delivery.construct_delivery_email(
-            log,
             request,
             intake_table,
             member_table,

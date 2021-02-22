@@ -1,5 +1,6 @@
 from requests.exceptions import HTTPError
 from sendgrid.helpers.mail import Mail
+import structlog
 from structlog.contextvars import bind_contextvars
 
 from automation.clients.templates import render
@@ -36,7 +37,8 @@ def render_email_template(ticket, delivery_volunteers):
     return message
 
 
-def construct_delivery_email(log, request, intake_table, member_table):
+def construct_delivery_email(request, intake_table, member_table):
+    log = structlog.get_logger("send_delivery_email")
     log.info("Sending delivery email", args=dict(request.args))
     try:
         record_id = request.args["record_id"]
