@@ -1,3 +1,4 @@
+import enum
 from typing import List, Optional
 
 import pydantic
@@ -37,6 +38,29 @@ class InboundModel(MetaBaseModel):
             "Phone Tag",
             "Out of Service/Cannot Reach",
         }
+
+    @classmethod
+    def get_nonterminal_statuses(cls):
+        NONTERMINAL_STATUSES = {
+            "Intake Needed",
+            "In Progress",
+            "Call Back",
+            "Spanish-Intake needed",
+        }
+
+        invalid_statuses = NONTERMINAL_STATUSES - cls.get_valid_statuses()
+        if len(invalid_statuses) != 0:
+            raise ValueError(
+                "One or more nonterminal statuses are invalid: {}".format(
+                    ", ".join(invalid_statuses)
+                )
+            )
+
+        return NONTERMINAL_STATUSES
+
+    @classmethod
+    def get_terminal_statuses(cls):
+        return cls.get_valid_statuses() - cls.get_nonterminal_statuses()
 
     @pydantic.validator("method")
     def validate_method(cls, v):
@@ -102,4 +126,25 @@ class IntakeTicketModel(MetaBaseModel):
             "AC Needed",
             "AC Delivered",
             "Seeking Other Goods",
+        }
+
+
+class AdministrativeModel(MetaBaseModel):
+    class Names(enum.Enum):
+        MAXIMUM_CAPACITY = "Maximum Capacity"
+        MINIMUM_CAPACITY = "Minimum Capacity"
+        INBOUND_BACKLOG = "Inbound Backlog"
+        DELIVERY_BACKLOG_UNASSIGNED = "Delivery Backlog (Unassigned)"
+        DELIVERY_BACKLOG_IN_PROGRESS = "Delivery Backlog (In Progress)"
+
+    name: Names = pydantic.Field(alias="Name")
+    value: Optional[int] = pydantic.Field(alias="Value")
+
+    @staticmethod
+    def get_valid_statuses():
+        return {
+            "Update Needed",
+            "Updated",
+            "Override",
+            "Manual",
         }

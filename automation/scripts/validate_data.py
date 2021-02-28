@@ -10,7 +10,9 @@ import pydantic
 from .. import config, tables
 
 
-def validate_table(client):
+def validate_table(table, conf):
+    client = table.get_airtable_client(conf.airtable, read_only=True)
+
     validation_issues = defaultdict(list)
 
     # TODO: Don't reach inside our client wrapper, maybe move this to
@@ -26,7 +28,7 @@ def validate_table(client):
                     )
 
     if len(validation_issues) > 0:
-        print("Found the following validation errors:")
+        print(f"Validation Errors for '{table.name}' Table:")
 
         for (
             validation_error_loc,
@@ -55,21 +57,36 @@ def validate_table(client):
 
 
 def main():
+    name_to_table = {t.name: t for t in tables.get_all_tables()}
+
     parser = argparse.ArgumentParser(
         "Validates all of the data in airtable with the models"
     )
-    parser.add_argument(
+    table_selection_group = parser.add_mutually_exclusive_group(required=True)
+    table_selection_group.add_argument(
         "--table",
-        type=lambda val: getattr(tables, val.upper()),
-        required=True,
+        choices=name_to_table.keys(),
+    )
+    table_selection_group.add_argument(
+        "--all",
+        action="store_true",
     )
 
     args = parser.parse_args()
 
     conf = config.load()
-    client = args.table.get_airtable_client(conf.airtable, read_only=True)
 
-    succeeded = validate_table(client)
+    provided_tables = None
+    if args.table is not None:
+        provided_tables = [name_to_table[args.table]]
+    elif args.all is not None:
+        provided_tables = list(name_to_table.values())
+
+    assert provided_tables is not None
+
+    succeeded = True
+    for table in provided_tables:
+        succeeded = validate_table(table, conf) and succeeded
 
     print("Succeeded." if succeeded else "Failed!")
     sys.exit(0 if succeeded else 1)

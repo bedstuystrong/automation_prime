@@ -17,7 +17,6 @@ import logging
 from typing import Callable, Dict, Optional, Set, Type
 
 import pydantic
-import pydantic.schema
 from airtable import Airtable
 
 from automation.config import AirtableConfig
@@ -245,20 +244,20 @@ class AirtableClient:
                         break
                     except Exception:
                         logger.exception(
-                            f"Callback '{cb.__qualname__}' for record failed "
-                            f"(num retries {num_retries}): {record.id}"
+                            f"Callback '{type(cb).__name__}' for record "
+                            f"failed (num retries {num_retries}): {record.id}"
                         )
                 else:
                     logger.error(
-                        f"Callback '{cb.__qualname__}' for record did not "
+                        f"Callback '{type(cb).__name__}' for record did not "
                         f"succeed: {record.id}"
                     )
                     success = False
 
                 if original_id != record.id:
                     raise ValueError(
-                        f"Callback '{cb.__qualname__}' modified the ID of the "
-                        f"record: original={original_id}, new={record.id}"
+                        f"Callback '{type(cb).__name__}' modified the ID of "
+                        f"the record: original={original_id}, new={record.id}"
                     )
             finally:
                 record.meta_last_seen_status = original_status

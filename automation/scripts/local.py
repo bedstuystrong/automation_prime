@@ -20,8 +20,7 @@ def main():
     )
     parser.add_argument(
         "--live",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Enables updating airtable records",
     )
 
