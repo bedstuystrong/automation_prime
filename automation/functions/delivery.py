@@ -56,6 +56,12 @@ def check_ready_to_send(ticket):
         return f"Ticket {ticket.ticket_id} is not assigned"
     if not ticket.delivery_volunteer:
         return f"Ticket {ticket.ticket_id} has no delivery volunteer"
+    if not ticket.request_name:
+        return f"Ticket {ticket.ticket_id} has no requester name"
+    if not ticket.address:
+        return f"Ticket {ticket.ticket_id} has no address"
+    if not ticket.phone_number:
+        return f"Ticket {ticket.ticket_id} has no phone number"
     return None
 
 

@@ -26,12 +26,10 @@ class FooModel(airtable.MetaBaseModel):
         }
 
 
-def get_foo_table_spec(status_to_cb=None):
-    return airtable.TableSpec(
-        name="foo",
-        model_cls=FooModel,
-        status_to_cb=status_to_cb if status_to_cb is not None else dict(),
-    )
+FOO = airtable.TableSpec(
+    name="foo",
+    model_cls=FooModel,
+)
 
 
 #########
@@ -89,12 +87,11 @@ def test_poll_table_basic():
             assert foo_model.id == test_model.id
             assert foo_model.status == "Processed"
 
-        test_spec = get_foo_table_spec(
-            {
-                "New": lambda conf: on_new,
-                "Processed": lambda conf: on_processed,
-            }
-        )
+        def on_status_update(record):
+            if record.status == "New":
+                on_new(record)
+            elif record.status == "Processed":
+                on_processed(record)
 
         # Mocks
         def mock_poll():
@@ -104,16 +101,16 @@ def test_poll_table_basic():
                 return []
 
         mock_get.side_effect = mock_poll
-        client = test_spec.get_airtable_client(TEST_CONFIG.airtable)
+        client = FOO.get_airtable_client(TEST_CONFIG.airtable)
         # Test
-        poll_res = client.poll_table(TEST_CONFIG)
+        poll_res = client.poll_table(on_status_update)
 
         assert poll_res
         assert test_model.status == "Processed"
         assert test_model.meta_last_seen_status == "New"
         assert mock_update.call_count == 1
 
-        poll_res = client.poll_table(TEST_CONFIG)
+        poll_res = client.poll_table(on_status_update)
 
         assert poll_res
         assert test_model.status == "Processed"
@@ -121,7 +118,7 @@ def test_poll_table_basic():
         assert mock_update.call_count == 2
 
         # NOTE that this call should be a no-op
-        poll_res = client.poll_table(TEST_CONFIG)
+        poll_res = client.poll_table(on_status_update)
 
         assert poll_res
         assert mock_update.call_count == 2
@@ -149,10 +146,12 @@ def test_poll_table_retries():
             spec=lambda: None, side_effect=Exception("Fuuuuuu")
         )
 
-        test_spec = get_foo_table_spec({"New": lambda conf: on_new_mock})
+        def on_status_update(record):
+            if record.status == "New":
+                on_new_mock(record)
 
-        client = test_spec.get_airtable_client(TEST_CONFIG.airtable)
-        poll_res = client.poll_table(TEST_CONFIG, max_num_retries=3)
+        client = FOO.get_airtable_client(TEST_CONFIG.airtable)
+        poll_res = client.poll_table(on_status_update, max_num_retries=3)
 
         assert not poll_res
         assert test_model.status == "New"
@@ -187,9 +186,12 @@ def test_poll_table_retries_transient():
             ],
         )
 
-        test_spec = get_foo_table_spec({"New": lambda conf: on_new_mock})
-        client = test_spec.get_airtable_client(TEST_CONFIG.airtable)
-        poll_res = client.poll_table(TEST_CONFIG, max_num_retries=3)
+        def on_status_update(record):
+            if record.status == "New":
+                on_new_mock(record)
+
+        client = FOO.get_airtable_client(TEST_CONFIG.airtable)
+        poll_res = client.poll_table(on_status_update, max_num_retries=3)
 
         assert poll_res
         assert test_model.status == "New"
