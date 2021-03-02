@@ -3,10 +3,12 @@ from unittest import mock
 
 from hypothesis import given
 from hypothesis.strategies import (
+    booleans,
     builds,
     characters,
     data,
     emails,
+    lists,
     just,
     shared,
     text,
@@ -23,8 +25,12 @@ from automation.models import IntakeModel, MemberModel
 @given(
     data=data(),
     volunteer_id=shared(text(min_size=1), key="volunteer_id"),
+    allow_empty_food_options=booleans(),
+    allow_empty_other_items=booleans(),
 )
-def test_render_email_template(data, volunteer_id):
+def test_render_email_template(
+    data, volunteer_id, allow_empty_food_options, allow_empty_other_items
+):
     ticket = data.draw(
         builds(
             IntakeModel,
@@ -35,6 +41,10 @@ def test_render_email_template(data, volunteer_id):
             request_name=text(),
             address=text(),
             phone_number=text(),
+            food_options=lists(
+                text(), min_size=0 if allow_empty_food_options else 1
+            ),
+            other_items=text(min_size=0 if allow_empty_other_items else 1),
         )
     )
     volunteer = data.draw(
@@ -54,7 +64,7 @@ def test_render_email_template(data, volunteer_id):
     inventory = mock.Mock(Inventory, auto_spec=True)
     inventory.category.return_value = "Groceries"
     inventory.quantity.return_value = 1
-    inventory.quantity.return_value = "widget"
+    inventory.unit.return_value = "widget"
 
     email = render_email_template(ticket, [volunteer], inventory)
 
@@ -70,8 +80,18 @@ def test_render_email_template(data, volunteer_id):
         f"[Bed Stuy Strong] Delivery Instructions for {ticket.ticket_id}"
     )
     assert str(email.subject) == expected_subject
-    for food_option in ticket.food_options:
-        assert food_option in email.content
+    for content in email.contents:
+        for food_option in ticket.food_options:
+            assert food_option in content.content
+        if ticket.other_items is not None:
+            for item in ticket.other_items.split(","):
+                assert item.strip() in content.content
+        for field in (
+            ticket.request_name,
+            ticket.address,
+            ticket.phone_number,
+        ):
+            assert field in content.content
 
 
 def test_ready_to_send():
