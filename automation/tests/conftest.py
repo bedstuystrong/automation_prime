@@ -39,3 +39,21 @@ def mock_sendgrid_client():
         "sendgrid.SendGridAPIClient", autospec=True
     ) as mock_client, mock.patch("sendgrid.helpers.mail.Mail", autospec=True):
         yield mock_client
+
+
+@pytest.fixture
+def mock_auth0_client():
+    with mock.patch(
+        "auth0.Auth0Client", autospec=True
+    ) as mock_client, mock.patch("requests", autospec=True):
+        yield mock_client
+
+
+@pytest.fixture
+def mock_secrets_client():
+    with mock.patch(
+        "secrets.SecretsClient", autospec=True
+    ) as mock_client, mock.patch(
+        "secretmanager.SecretManagerServiceClient", autospec=True
+    ):
+        yield mock_client
