@@ -11,14 +11,16 @@ Includes:
 """
 
 import abc
-from automation.config import AirtableConfig
 import datetime
+import json
 import logging
 from typing import Callable, Dict, Optional, Set, Type
 
 import pydantic
-
+import pydantic.schema
 from airtable import Airtable
+
+from automation.config import AirtableConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,24 +39,63 @@ DEFAULT_POLL_TABLE_MAX_NUM_RETRIES = 3
 
 # TODO : consider not allowing users change the id field
 class BaseModel(pydantic.BaseModel, abc.ABC):
-    id: str
-    created_at: datetime.datetime
+    id: str = pydantic.Field(allow_mutation=False)
+    created_at: datetime.datetime = pydantic.Field(allow_mutation=False)
+
+    _snapshot = pydantic.PrivateAttr(default=None)
 
     class Config:
         allow_population_by_field_name = True
+        underscore_attrs_are_private = True
+        validate_assignment = True
+
+    def snapshot(self):
+        self._snapshot = self.copy(deep=True)
+
+    def get_modified_fields(self):
+        if self._snapshot is None:
+            raise RuntimeError(
+                "Attempted to get modified fields without having taken a "
+                "snapshot"
+            )
+
+        snapshot_dict = self._snapshot.dict()
+        self_dict = self.dict()
+        all_fields = snapshot_dict.keys() | self_dict.keys()
+
+        modified_fields = set()
+        for field in all_fields:
+            if snapshot_dict.get(field) != self_dict.get(field):
+                modified_fields.add(field)
+
+        return modified_fields
 
     @classmethod
     def from_airtable(cls, raw_dict):
-        return cls(
+        model = cls(
             id=raw_dict["id"],
             created_at=raw_dict["createdTime"],
             **raw_dict["fields"],
         )
+        model.snapshot()
+        return model
 
-    def to_airtable(self):
-        fields = self.dict(by_alias=True, exclude_none=True)
-        del fields["id"]
-        del fields["created_at"]
+    def to_airtable(self, modified_only=False):
+        include = None
+        if modified_only:
+            include = self.get_modified_fields()
+
+        # NOTE that `pydantic.BaseModel.dict()` doesn't serialize all types to
+        # strings, so we have to use `pydantic.BaseModel.json()` to dump the
+        # model to json and then reload it back into a dict.
+        fields = json.loads(
+            self.json(
+                by_alias=True,
+                exclude_none=True,
+                include=include,
+                exclude={"id", "created_at"},
+            )
+        )
 
         return {
             "id": self.id,
@@ -159,8 +200,11 @@ class AirtableClient:
 
         self.client.update(
             model.id,
-            model.to_airtable()["fields"],
+            model.to_airtable(modified_only=True)["fields"],
         )
+
+        # Airtable record has been updated, take a new snapshot
+        model.snapshot()
 
     # TODO : handle missing statuses (e.g. airtable field was updated)
     def poll_table(

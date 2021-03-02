@@ -22,7 +22,7 @@ pathspec==0.8.0
 pluggy==0.13.1
 pre-commit==2.9.2
 py==1.10.0
-pydantic==1.6.1
+pydantic==1.8
 PyJWT==1.7.1
 pyparsing==2.4.7
 pytest==6.2.0

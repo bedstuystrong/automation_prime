@@ -1,3 +1,4 @@
+import pytest
 from unittest import mock
 
 from ..clients import airtable
@@ -36,6 +37,31 @@ def get_foo_table_spec(status_to_cb=None):
 #########
 # TESTS #
 #########
+
+
+def test_snapshot_basic():
+    test_model = FooModel(
+        id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
+        status="New",
+    )
+
+    # Getting modified fields before a snapshot should fail
+    with pytest.raises(RuntimeError):
+        test_model.get_modified_fields()
+
+    test_model.snapshot()
+    assert test_model.get_modified_fields() == set()
+
+    test_model.name = "bar"
+
+    assert test_model.get_modified_fields() == {"name"}
+    assert test_model.to_airtable(modified_only=True)["fields"].keys() == {
+        "name"
+    }
+
+    test_model.snapshot()
+    assert test_model.get_modified_fields() == set()
 
 
 def test_poll_table_basic():
