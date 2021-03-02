@@ -17,6 +17,7 @@ template use `{{ member.name }}` instead of `{{ name }}`.
 
 import functools
 from pathlib import Path
+import re
 
 import jinja2
 from jinja2.utils import select_autoescape
@@ -24,14 +25,20 @@ from jinja2.utils import select_autoescape
 STATIC_PATH = Path(__file__).parent.parent / "static"
 
 
+def digits_only(value):
+    return re.sub(r"[^0-9]", "", value, count=0)
+
+
 @functools.cache
 def get_environment():
-    return jinja2.Environment(
+    env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(STATIC_PATH)),
         autoescape=select_autoescape(["HTML"]),
         trim_blocks=True,
         lstrip_blocks=True,
     )
+    env.filters["digits_only"] = digits_only
+    return env
 
 
 def render(template_name, **kwargs):

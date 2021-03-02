@@ -16,8 +16,8 @@ from .. import config  # noqa: E402
 RUNTIME = "python39"
 SOURCE = str(Path(__file__).resolve().parents[2])
 
-POLL_FUNCTION_NAMES = set(["poll_members"])
-HTTP_FUNCTION_NAMES = set(["send_delivery_email"])
+POLL_FUNCTION_NAMES = set(["poll_members", "poll_intake"])
+HTTP_FUNCTION_NAMES = set([])
 
 POLL_TOPIC_NAME = "POLL_TOPIC"
 POLL_SCHEDULE = "* * * * *"

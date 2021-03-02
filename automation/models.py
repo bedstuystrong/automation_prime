@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import pydantic
 
-from .clients.airtable import MetaBaseModel
+from .clients.airtable import BaseModel, MetaBaseModel
 
 
 class InboundModel(MetaBaseModel):
@@ -130,3 +130,19 @@ class IntakeModel(MetaBaseModel):
             "AC Delivered",
             "Seeking Other Goods",
         }
+
+
+class ItemsByHouseholdSizeModel(BaseModel):
+    item: str = pydantic.Field(alias="Item")
+    unit: str = pydantic.Field(alias="Unit")
+    category: str = pydantic.Field(alias="Category")
+    size_1: int = pydantic.Field(alias="1 Person(s)")
+    size_2: int = pydantic.Field(alias="2 Person(s)")
+    size_3: int = pydantic.Field(alias="3 Person(s)")
+    size_4: int = pydantic.Field(alias="4 Person(s)")
+    size_5: int = pydantic.Field(alias="5 Person(s)")
+    size_6: int = pydantic.Field(alias="6 Person(s)")
+    size_7: int = pydantic.Field(alias="7 Person(s)")
+    size_8: int = pydantic.Field(alias="8 Person(s)")
+    size_9: int = pydantic.Field(alias="9 Person(s)")
+    size_10: int = pydantic.Field(alias="10 Person(s)")

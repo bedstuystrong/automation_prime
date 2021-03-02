@@ -60,14 +60,14 @@ def main():
     )
     parser.add_argument(
         "--table",
-        type=lambda val: getattr(tables, val.upper()),
+        type=lambda val: tables.TABLES[val.lower()],
         required=True,
     )
 
     args = parser.parse_args()
 
     conf = config.load()
-    client = args.table.get_airtable_client(conf.airtable, read_only=True)
+    client = args.table.get_airtable_client(conf, read_only=True)
 
     succeeded = validate_table(client)
 
