@@ -3,7 +3,7 @@ import logging
 import sendgrid
 
 from .. import config
-from ..clients import slack, templates
+from ..clients import auth0, slack, templates
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,7 @@ class NewCallback:
         self.sendgrid_client = sendgrid.SendGridAPIClient(
             conf.sendgrid.api_key
         )
+        self.auth0_client = auth0.Auth0Client(conf.auth0)
         self.from_email = conf.sendgrid.from_email
 
     def __call__(self, member_model):
@@ -31,6 +32,8 @@ class NewCallback:
             logger.warning(
                 "Couldn't find slack user for: {}".format(member_model.email)
             )
+
+        self.auth0_client.create_user(member_model.email, member_model.name)
 
         # Send the new member email
         self.sendgrid_client.send(

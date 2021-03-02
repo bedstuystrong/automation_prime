@@ -12,12 +12,21 @@ class SecretsClient:
         self._client = secretmanager.SecretManagerServiceClient()
         self._project_id = config.load().google_cloud.project_id
 
-    def get_secret(self, name):
-        secret_name = 'projects/%s/secrets/%s/versions/latest' % (
-            self._project_id,
-            name
+    def set_secret(self, name, value):
+        secret_path = self._client.secret_path(self._project_id, name)
+        self._client.add_secret_version(
+            {
+                "parent": secret_path,
+                "payload": {
+                    "data": value.encode("UTF-8"),
+                },
+            }
         )
-        response = self._client.access_secret_version({
-            "name": secret_name
-        })
-        return response.payload.data.decode("UTF-8")
+        return self.get_secret(name)
+
+    def get_secret(self, name):
+        latest_secret_path = self._client.secret_version_path(
+            self._project_id, name, "latest"
+        )
+        res = self._client.access_secret_version({"name": latest_secret_path})
+        return res.payload.data.decode("UTF-8")

@@ -1,4 +1,5 @@
 import requests
+import tenacity
 
 from automation.config import Auth0Config
 from .secrets import SecretsClient
@@ -7,29 +8,67 @@ from .secrets import SecretsClient
 # CLIENT #
 ##########
 
+AUTH0_API_TOKEN_SECRET = "auth0_api_token"
+
+
+def is_unauthorized(exception):
+    return (
+        isinstance(exception, requests.exceptions.HTTPError)
+        and exception.response.status_code == requests.codes.unauthorized
+    )
+
 
 class Auth0Client:
     def __init__(self, conf: Auth0Config):
-        self._base_url = 'https://%s/api/v2' % conf.domain
-        self._token = SecretsClient().get_secret('auth0_api_token')
+        self._base_url = "https://" + conf.domain
+        self._api_url = self._base_url + "/api/v2"
+        self._client_id = conf.client_id
+        self._client_secret = conf.client_secret
+        self._secrets_client = SecretsClient()
+        self._token = self._secrets_client.get_secret(AUTH0_API_TOKEN_SECRET)
 
-    def api_call(self, method, path, json):
-        # TODO do we need to try/except here or check response status code?
-        headers = {
-            "Authorization": 'Bearer %s' % self._token,
-        }
-        resp = requests.request(
-            method,
-            self._base_url + path,
-            headers=headers,
-            json=json
+    def _refresh_token(self):
+        res = requests.post(
+            self._base_url + "/oauth/token",
+            json={
+                "client_id": self._client_id,
+                "client_secret": self._client_secret,
+                "audience": self._api_url + "/",
+                "grant_type": "client_credentials",
+            },
         )
-        return resp
+        res.raise_for_status()
+        token = res.json()["access_token"]
+        self._secrets_client.set_secret(AUTH0_API_TOKEN_SECRET, token)
+        self._token = token
+
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception(is_unauthorized),
+        stop=tenacity.stop_after_attempt(1),
+    )
+    def api_call(self, method, path, json):
+        try:
+            headers = {
+                "Authorization": "Bearer %s" % self._token,
+            }
+            res = requests.request(
+                method, self._api_url + path, headers=headers, json=json
+            )
+            res.raise_for_status()
+            return res.json()
+        except requests.exceptions.HTTPError as e:
+            if is_unauthorized(e):
+                self._refresh_token()
+            raise e
 
     def create_user(self, email, name):
-        return self.api_call('POST', '/users', {
-            "connection": "email",
-            "email": email,
-            "name": name,
-            "email_verified": True,
-        })
+        return self.api_call(
+            "POST",
+            "/users",
+            {
+                "connection": "email",
+                "email": email,
+                "name": name,
+                "email_verified": True,
+            },
+        )
