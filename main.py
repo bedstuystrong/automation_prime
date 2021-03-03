@@ -1,6 +1,12 @@
 import logging
+from slack_logger import SlackHandler, SlackFormatter
 
-logging.basicConfig(level=logging.INFO)
+#Adding a handler to output error messages from GCP to slack
+#Documentation: https://pypi.org/project/slack-logger/
+sh = SlackHandler(username='gcp_error_bot', icon_emoji=':robot_face:', url='https://hooks.slack.com/services/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')
+f = SlackFormatter()
+sh.setFormatter(f)
+logging.basicConfig(level=logging.INFO, handlers=[sh])
 
 from automation import config, tables  # noqa: E402
 
