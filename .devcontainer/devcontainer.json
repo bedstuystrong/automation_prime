@@ -19,8 +19,8 @@
 		"terminal.integrated.shell.linux": "/bin/bash",
 		"python.pythonPath": "/usr/local/bin/python",
 		"python.linting.enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.formatting.provider": "black",
+    	"python.linting.pylintEnabled": false,
+    	"python.formatting.provider": "black",
 		"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
 		"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 		"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
@@ -47,7 +47,9 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo pip install --editable . && pre-commit install --install-hooks",
+	// TODO: remove --no-use-pep517 and uncomment build-system metadata in pyproject.toml
+	//       once https://github.com/pypa/pip/issues/7953 is resolved
+	"postCreateCommand": "pip install -r requirements.txt && pip install --no-use-pep517 --user --editable . && pre-commit install --install-hooks",
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode"
