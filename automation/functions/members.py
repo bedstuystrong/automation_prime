@@ -14,7 +14,7 @@ class NewCallback:
         self.sendgrid_client = sendgrid.SendGridAPIClient(
             conf.sendgrid.api_key
         )
-        self.auth0_client = auth0.Auth0Client(conf.auth0)
+        self.auth0_client = auth0.Auth0Client(conf.auth0, conf.google_cloud)
         self.from_email = conf.sendgrid.from_email
 
     def __call__(self, member_model):
