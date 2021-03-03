@@ -2,7 +2,7 @@ import requests
 import tenacity
 
 from automation.config import Auth0Config, GoogleCloudConfig
-from .secrets import SecretsClient
+from automation.clients import secrets
 
 ##########
 # CLIENT #
@@ -26,7 +26,7 @@ class Auth0Client:
         self._api_url = self._base_url + "/api/v2"
         self._client_id = conf.client_id
         self._client_secret = conf.client_secret
-        self._secrets_client = SecretsClient(google_cloud_conf)
+        self._secrets_client = secrets.SecretsClient(google_cloud_conf)
         self._token = self._secrets_client.get_secret(AUTH0_API_TOKEN_SECRET)
 
     def _refresh_token(self):
