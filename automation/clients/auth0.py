@@ -1,7 +1,7 @@
 import requests
 import tenacity
 
-from automation.config import Auth0Config
+from automation.config import Auth0Config, GoogleCloudConfig
 from .secrets import SecretsClient
 
 ##########
@@ -19,12 +19,14 @@ def is_unauthorized(exception):
 
 
 class Auth0Client:
-    def __init__(self, conf: Auth0Config):
+    def __init__(
+        self, conf: Auth0Config, google_cloud_conf: GoogleCloudConfig
+    ):
         self._base_url = "https://" + conf.domain
         self._api_url = self._base_url + "/api/v2"
         self._client_id = conf.client_id
         self._client_secret = conf.client_secret
-        self._secrets_client = SecretsClient()
+        self._secrets_client = SecretsClient(google_cloud_conf)
         self._token = self._secrets_client.get_secret(AUTH0_API_TOKEN_SECRET)
 
     def _refresh_token(self):

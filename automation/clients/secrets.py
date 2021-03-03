@@ -1,6 +1,6 @@
 from google.cloud import secretmanager
 
-from .. import config
+from automation.config import GoogleCloudConfig
 
 ##########
 # CLIENT #
@@ -8,9 +8,9 @@ from .. import config
 
 
 class SecretsClient:
-    def __init__(self):
+    def __init__(self, conf: GoogleCloudConfig):
         self._client = secretmanager.SecretManagerServiceClient()
-        self._project_id = config.load().google_cloud.project_id
+        self._project_id = conf.project_id
 
     def set_secret(self, name, value):
         secret_path = self._client.secret_path(self._project_id, name)
