@@ -27,6 +27,9 @@ class Auth0Client:
         self._client_id = conf.client_id
         self._client_secret = conf.client_secret
         self._secrets_client = secrets.SecretsClient(google_cloud_conf)
+        self._token = None
+
+    def _fetch_token(self):
         self._token = self._secrets_client.get_secret(AUTH0_API_TOKEN_SECRET)
 
     def _refresh_token(self):
@@ -50,6 +53,8 @@ class Auth0Client:
     )
     def api_call(self, method, path, json):
         try:
+            if self._token is None:
+                self._fetch_token()
             headers = {
                 "Authorization": "Bearer %s" % self._token,
             }

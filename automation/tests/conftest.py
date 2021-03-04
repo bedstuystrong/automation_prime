@@ -7,7 +7,7 @@ import logging
 import pytest
 from unittest import mock
 
-from ..clients import slack
+from ..clients import slack, auth0
 
 #########
 # SETUP #
@@ -38,4 +38,12 @@ def mock_sendgrid_client():
     with mock.patch(
         "sendgrid.SendGridAPIClient", autospec=True
     ) as mock_client, mock.patch("sendgrid.helpers.mail.Mail", autospec=True):
+        yield mock_client
+
+
+@pytest.fixture
+def mock_auth0_client():
+    with mock.patch(
+        f"{auth0.__name__}.Auth0Client", autospec=True
+    ) as mock_client:
         yield mock_client
