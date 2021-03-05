@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8" />
+
+</head>
+
+<body>
+
+  <p>
+    Hi
+    {% for volunteer in delivery_volunteers %}
+      {{ volunteer.name.split()[0] }}{% if loop.length > 1 %},{% endif %}
+      {% if loop.length > 1 and loop.last %} and{% endif %}
+    {% endfor %}!
+  </p>
+  <p>
+    This is your email with contact information and delivery instructions for
+    {{ ticket.request_name.strip() }}, ticket ID <strong>
+    {{ ticket.ticket_id }}</strong>. We’ve included a step-by-step checklist,
+    plus the complete grocery list(s) below, along with spending guidance.
+  </p>
+  <p>
+    Please note that when you call to coordinate your delivery time if a
+    neighbor asks to add additional items and they already have <strong>3
+    custom items on their list</strong> please let them know that you can't
+    make any additions.
+  </p>
+
+  <p>
+    Thanks so much for being here, and please reach out with any questions!
+    <br />
+    Bed-Stuy Strong
+  </p>
+
+  <hr />
+
+  <h1 style="font-size: 1.17em">Instructions and Best Practices</h1>
+
+  <p>
+    <strong>First, call your neighbors.</strong> Please call when you get this
+    email, or shortly after - your neighbor will be expecting to hear from you!
+    Agree on a good delivery time, confirm their address, and ask any questions
+    about their grocery list (i.e. if “baby formula” do they have a preferred
+    brand?).
+  </p>
+  <p>
+    If you can’t get a hold of someone, please try back a few times, leave a
+    message, and text. If there’s still no response, let us know at <a clicktracking=off
+      href="mailto:operations@bedstuystrong.com">operations@bedstuystrong.com</a>
+    (just reply to this email).
+  </p>
+  <p>
+    <strong>Shop the grocery list.</strong> Keep yourself safe - wear a mask,
+    keep distance when possible, and wash your hands when you get home from
+    shopping. Use the list as your guide, and do your best to purchase what
+    your neighbor asked for. Be mindful of household size and the spending
+    guidance under the shopping list below to determine quantities; you are
+    looking to get a week's worth of food for your neighbor. Make sure to take
+    a photo of your receipt for the completion form!
+  </p>
+  <p>
+    <strong>Safely deliver the groceries.</strong> Call/buzz when you arrive,
+    then back up 6 feet for COVID safety. Please stick around to say hello and
+    make sure they receive the bags. ❤ This is about being in relationship to
+    our neighbors 😊 Once you’ve dropped off groceries, check in after! A
+    simple text to check in / ask how they’re doing is always appreciated. ❤
+  </p>
+  <p>
+    If you can, <strong>please snap pictures of your volunteering
+    efforts</strong> for our communication outputs (social, newsletter, etc.)!
+    You can email them directly to us, we’d greatly appreciate it!
+  </p>
+  <p>
+    <strong>Fill out the <a clicktracking=off href="https://airtable.com/shrvHf4k5lRo0I8F4">completion form</a></strong>
+    to let us know your delivery is complete, and to receive your reimbursement
+    within 48 – 72 hours.
+  </p>
+  <p>
+    <strong>A note:</strong> Some neighbors will offer or ask about making
+    contributions to offset their grocery delivery. Thank them and accept their
+    contribution; anything they wish to donate goes right back into more
+    groceries for others.
+  </p>
+  <ul>
+    <li>If the neighbor hands you cash, you can enter this in the completion
+      form to contribute it back into BSS. If you have any questions, email us
+      and we will figure out another way to accept the contribution!</li>
+    <li>If the neighbor is younger / tech savvy, or notes that they would like
+      to donate in the future, feel free to direct them to <a clicktracking=off
+        href="https://www.bedstuystrong.com">www.bedstuystrong.com</a> for
+      information on how to donate (or share BSS Venmo/Cashapp info)</li>
+  </ul>
+  <p>
+    If you have any issues along the way, please reach out to us at <a clicktracking=off
+      href="mailto:operations@bedstuystrong.com">operations@bedstuystrong.com</a>
+    (or reply to this email) and someone will get back to you.
+  </p>
+
+  <hr />
+
+  <h1 style="font-size: 1.17em">Ticket {{ ticket.ticket_id }}</h1>
+
+  <p>
+    <strong>Neighbor:</strong> {{ ticket.request_name }} ({{ ticket.nearest_intersection }})<br />
+    <strong>Address:</strong> <a clicktracking=off href="https://www.google.com/maps/dir/?api=1&destination={{ (ticket.address + ", Brooklyn, NY") | urlencode }}">{{ ticket.address }}</a><br />
+    <strong>Phone:</strong> <a clicktracking=off href="tel:+1-{{ ticket.phone_number | digits_only }}">{{ ticket.phone_number }}</a><br />
+    <strong>Delivery Notes:</strong> {{ ticket.delivery_notes }}<br />
+    <strong>Can meet outside?</strong> {{ "yes" if ticket.can_meet_outside else "no" }}<br />
+    <strong>Vulnerabilities:</strong> {{ ticket.vulnerability | join(" ") }}<br />
+    <strong>Household Size:</strong> {{ ticket.household_size }}<br />
+  </p>
+
+  <h1 style="font-size: 1.17em">Shopping List</h1>
+
+  {% for category, items in shopping_list | groupby("category") %}
+  <h2 style="font-size: 1em">{{ category }}</h2>
+  <ul>
+    {% for item in items %}
+    <li>
+      {{ item.quantity }} {{ item.name }} ({{ item.unit }})
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+  {% if ticket.other_items %}
+  <h2 style="font-size: 1em">Other Items</h2>
+  <ul>
+    {% for item in ticket.other_items.split(",") %}
+    <li>
+      {{ item.strip() }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <p>
+    Please try to stay within the following guidelines, according to the
+    household size above.
+  </p>
+  <table style="border: 1px solid black">
+    <thead>
+      <tr><th>Household Size</th><th>Spending Guidance</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1 person</td><td>$100</td></tr>
+      <tr><td>2 people</td><td>$150</td></tr>
+      <tr><td>3-5 people</td><td>$250</td></tr>
+      <tr><td>6+ people</td><td>$350</td></tr>
+    </tbody>
+  </table>
+
+</body>
+
+</html>

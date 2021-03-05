@@ -11,30 +11,43 @@ def main():
     parser = argparse.ArgumentParser(
         "A tool for running the automation locally"
     )
-    parser.add_argument("action", choices=["poll"])
+    parser.add_argument("action", choices=["poll", "migrate-meta"])
     parser.add_argument(
         "--table",
-        type=lambda val: getattr(tables, val.upper()),
         required=True,
         help="Which Airtable table to use",
     )
     parser.add_argument(
         "--live",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Enables updating airtable records",
     )
 
     args = parser.parse_args()
 
     conf = config.load()
-    client = args.table.get_airtable_client(
-        conf.airtable, read_only=not args.live
-    )
+    table = tables.POLLABLE_TABLES[args.table](conf, read_only=not args.live)
 
     succeeded = True
     if args.action == "poll":
-        succeeded = client.poll_table(conf)
+        succeeded = table.poll_table()
+    elif args.action == "migrate-meta":
+        client = table.get_airtable(conf.airtable, read_only=not args.live)
+        # TODO: once airtable-python-wrapper releases a version with batched
+        # updates, make this use a paginated query and batched updates
+        for record in client.get_all_with_new_status():
+            if (
+                record.meta_last_seen_status is None
+                and record.meta is not None
+            ):
+                last_seen_status = record.meta["lastSeenStatus"]
+                logging.info(
+                    f"Updating {record.id} to have last seen status "
+                    f"{last_seen_status}"
+                )
+                client.client.update(
+                    record.id, {"_meta_last_seen_status": last_seen_status}
+                )
     else:
         raise ValueError("Unsupported action: {}".format(args.action))
 

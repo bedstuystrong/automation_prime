@@ -40,7 +40,8 @@
 		"eamodio.gitlens",
 		"ms-python.vscode-pylance",
 		"bungcip.better-toml",
-		"editorconfig.editorconfig"
+		"editorconfig.editorconfig",
+		"samuelcolvin.jinjahtml"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
