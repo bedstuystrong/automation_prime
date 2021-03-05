@@ -50,7 +50,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// TODO: remove --no-use-pep517 and uncomment build-system metadata in pyproject.toml
 	//       once https://github.com/pypa/pip/issues/7953 is resolved
-	"postCreateCommand": "pip install -r requirements.txt && pip install --no-use-pep517 --user --editable . && pre-commit install --install-hooks",
+	"postCreateCommand": "pip install -r requirements.txt && pip install --no-use-pep517 --user --editable . && python -m pre_commit install --install-hooks",
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode"
