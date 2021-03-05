@@ -1,3 +1,5 @@
+import os
+
 from python_http_client.exceptions import BadRequestsError
 from requests.exceptions import HTTPError
 from sendgrid.helpers.mail import Mail
@@ -9,7 +11,7 @@ from automation.utils.templates import render
 log = structlog.get_logger("send_delivery_email")
 
 # Turn this off for debugging
-SEND_MAIL = True
+SEND_MAIL = os.environ.get("SEND_MAIL", "") == "1"
 
 
 def on_assigned(

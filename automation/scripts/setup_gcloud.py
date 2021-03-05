@@ -148,7 +148,7 @@ def deploy():
                 "--source",
                 SOURCE,
                 "--set-env-vars",
-                "JSON_LOG_FORMAT=1",
+                "JSON_LOG_FORMAT=1,SEND_MAIL=1",
             ],
             stdout=subprocess.DEVNULL,
             check=True,
