@@ -36,6 +36,7 @@ TEST_CONFIG = config.Config(
             "domain": "",
             "client_id": "",
             "client_secret": "",
+            "error_bot_webhook": "",
         },
         "google_cloud": {"project_id": ""},
     }

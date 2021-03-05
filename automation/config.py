@@ -37,6 +37,7 @@ class SlackConfig(pydantic.BaseModel):
     scim_api_key: str
     resend_invite_webhook: str
     resend_invite_secret: str
+    error_bot_webhook: str
 
 
 class SendgridConfig(pydantic.BaseModel):
