@@ -3,7 +3,7 @@ import logging
 import sendgrid
 
 from .. import config
-from ..clients import auth0, slack, templates
+from ..clients import auth0, secrets, slack, templates
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,8 @@ class NewCallback:
         self.sendgrid_client = sendgrid.SendGridAPIClient(
             conf.sendgrid.api_key
         )
-        self.auth0_client = auth0.Auth0Client(conf.auth0, conf.google_cloud)
+        secrets_client = secrets.SecretsClient(conf.google_cloud)
+        self.auth0_client = auth0.Auth0Client(conf.auth0, secrets_client)
         self.from_email = conf.sendgrid.from_email
 
     def __call__(self, member_model):
