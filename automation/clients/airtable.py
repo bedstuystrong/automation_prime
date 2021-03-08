@@ -11,14 +11,16 @@ Includes:
 """
 
 import abc
-from automation.config import AirtableConfig
 import datetime
+import json
 import logging
-from typing import Callable, Dict, Optional, Set, Type
+from typing import Optional, Set, Type
 
 import pydantic
-
+import pydantic.schema
 from airtable import Airtable
+
+from automation import config
 
 logger = logging.getLogger(__name__)
 
@@ -37,24 +39,64 @@ DEFAULT_POLL_TABLE_MAX_NUM_RETRIES = 3
 
 # TODO : consider not allowing users change the id field
 class BaseModel(pydantic.BaseModel, abc.ABC):
-    id: str
-    created_at: datetime.datetime
+    id: str = pydantic.Field(allow_mutation=False)
+    created_at: datetime.datetime = pydantic.Field(allow_mutation=False)
+
+    _snapshot = pydantic.PrivateAttr(default=None)
 
     class Config:
         allow_population_by_field_name = True
+        underscore_attrs_are_private = True
+        validate_assignment = True
+
+    def snapshot(self):
+        self._snapshot = self.copy(deep=True)
+
+    def get_modified_fields(self):
+        if self._snapshot is None:
+            raise RuntimeError(
+                "Attempted to get modified fields without having taken a "
+                "snapshot"
+            )
+
+        snapshot_dict = self._snapshot.dict()
+        self_dict = self.dict()
+        all_fields = snapshot_dict.keys() | self_dict.keys()
+
+        modified_fields = set()
+        for field in all_fields:
+            if snapshot_dict.get(field) != self_dict.get(field):
+                modified_fields.add(field)
+
+        return modified_fields
 
     @classmethod
     def from_airtable(cls, raw_dict):
-        return cls(
+        model = cls(
             id=raw_dict["id"],
             created_at=raw_dict["createdTime"],
             **raw_dict["fields"],
         )
+        model.snapshot()
+        return model
 
-    def to_airtable(self):
-        fields = self.dict(by_alias=True, exclude_none=True)
-        del fields["id"]
-        del fields["created_at"]
+    def to_airtable(self, modified_only=False):
+        include = None
+        if modified_only:
+            include = self.get_modified_fields()
+
+        # NOTE that `pydantic.BaseModel.dict()` doesn't serialize all types to
+        # strings, so we have to use `pydantic.BaseModel.json()` to dump the
+        # model to json and then reload it back into a dict.
+        fields = json.loads(
+            self.json(
+                by_alias=True,
+                exclude_none=True,
+                include=include,
+                # Exclude _meta so that only the node automation controls it.
+                exclude={"id", "created_at", "_meta"},
+            )
+        )
 
         return {
             "id": self.id,
@@ -98,9 +140,10 @@ class MetaBaseModel(BaseModel, abc.ABC):
 class TableSpec(pydantic.BaseModel):
     name: str
     model_cls: Type[BaseModel]
-    status_to_cb: Dict[Optional[str], Callable[[BaseModel], BaseModel]]
 
-    def get_airtable_client(self, conf: AirtableConfig, read_only=False):
+    def get_airtable_client(
+        self, conf: config.AirtableConfig, read_only=False
+    ):
         return AirtableClient(
             conf, conf.table_names[self.name], self, read_only
         )
@@ -115,24 +158,28 @@ class TableSpec(pydantic.BaseModel):
 
 class AirtableClient:
     def __init__(
-        self, conf: AirtableConfig, airtable_name, table_spec, read_only
+        self, conf: config.AirtableConfig, airtable_name, table_spec, read_only
     ):
         self.read_only = read_only
-        self.client = Airtable(
-            conf.base_id,
-            airtable_name,
-            conf.api_key,
-        )
+        self.client = Airtable(conf.base_id, airtable_name, conf.api_key)
         self.table_spec = table_spec
 
-    def get_all(self, formula=None):
-        return (
-            self.table_spec.model_cls.from_airtable(raw)
-            for page in self.client.get_iter(formula=formula)
-            for raw in page
-        )
+    def get(self, record_id):
+        raw = self.client.get(record_id)
+        return self.table_spec.model_cls.from_airtable(raw)
 
-    def get_all_with_new_status(self):
+    def paginate_all(self, formula=None):
+        for page in self.client.get_iter(formula=formula):
+            page = [
+                self.table_spec.model_cls.from_airtable(raw) for raw in page
+            ]
+            yield page
+
+    def get_all(self, formula=None):
+        for page in self.paginate_all(formula=formula):
+            yield from page
+
+    def paginate_all_with_new_status(self):
         # TODO : sort by creation time asc
 
         # NOTE here is a formula for querying on a blank status
@@ -144,13 +191,16 @@ class AirtableClient:
         # # If not blank...
         # "{{Status}} != {{_meta_last_seen_status}}"
         # ")"
-
-        return self.get_all(
+        return self.paginate_all(
             formula=(
                 "AND({Status} != BLANK(), "
                 "{Status} != {_meta_last_seen_status})"
             )
         )
+
+    def get_all_with_new_status(self):
+        for page in self.paginate_all_with_new_status():
+            yield from page
 
     def update(self, model):
         if self.read_only:
@@ -159,21 +209,19 @@ class AirtableClient:
 
         self.client.update(
             model.id,
-            model.to_airtable()["fields"],
+            model.to_airtable(modified_only=True)["fields"],
         )
+
+        # Airtable record has been updated, take a new snapshot
+        model.snapshot()
 
     # TODO : handle missing statuses (e.g. airtable field was updated)
     def poll_table(
-        self, conf, max_num_retries=DEFAULT_POLL_TABLE_MAX_NUM_RETRIES
+        self, callback, max_num_retries=DEFAULT_POLL_TABLE_MAX_NUM_RETRIES
     ):
         logger.info("Polling table: {}".format(self.table_spec.name))
 
         success = True
-
-        callbacks = {
-            status: cb(conf)
-            for status, cb in self.table_spec.status_to_cb.items()
-        }
 
         for record in self.get_all_with_new_status():
             assert record.status is not None
@@ -186,34 +234,24 @@ class AirtableClient:
                 original_id = record.id
                 original_status = record.status
 
-                cb = callbacks.get(record.status)
-
-                if cb is None:
-                    logger.info(
-                        "No callback for record with status "
-                        f"'{record.status}': {record.id}"
-                    )
-                    continue
-
                 for num_retries in range(max_num_retries):
                     try:
-                        cb(record)  # noqa: F841
+                        callback(record)
                         break
                     except Exception:
                         logger.exception(
-                            f"Callback '{cb.__qualname__}' for record failed "
+                            f"Callback for record failed "
                             f"(num retries {num_retries}): {record.id}"
                         )
                 else:
                     logger.error(
-                        f"Callback '{cb.__qualname__}' for record did not "
-                        f"succeed: {record.id}"
+                        f"Callback for record did not succeed: {record.id}"
                     )
                     success = False
 
                 if original_id != record.id:
                     raise ValueError(
-                        f"Callback '{cb.__qualname__}' modified the ID of the "
+                        f"Callback modified the ID of the "
                         f"record: original={original_id}, new={record.id}"
                     )
             finally:

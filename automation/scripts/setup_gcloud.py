@@ -16,7 +16,7 @@ from .. import config  # noqa: E402
 RUNTIME = "python39"
 SOURCE = str(Path(__file__).resolve().parents[2])
 
-POLL_FUNCTION_NAMES = set(["poll_members"])
+POLL_FUNCTION_NAMES = set(["poll_members", "poll_intake"])
 HTTP_FUNCTION_NAMES = set([])
 
 POLL_TOPIC_NAME = "POLL_TOPIC"
@@ -147,6 +147,8 @@ def deploy():
                 POLL_TOPIC_NAME,
                 "--source",
                 SOURCE,
+                "--set-env-vars",
+                "JSON_LOG_FORMAT=1,SEND_MAIL=1",
             ],
             stdout=subprocess.DEVNULL,
             check=True,
@@ -183,12 +185,14 @@ def deploy():
                 "functions",
                 "deploy",
                 "--runtime",
-                "python38",
+                RUNTIME,
                 "--trigger-http",
                 "--allow-unauthenticated",
                 "--format",
                 "json",
                 func_name,
+                "--set-env-vars",
+                "JSON_LOG_FORMAT=1",
             ],
             check=True,
             stdout=subprocess.PIPE,

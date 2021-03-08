@@ -23,8 +23,17 @@ TEST_CONFIG = config.Config(
             "test_user_email": "",
             "test_user_id": "",
         },
-        "sendgrid": {"api_key": "", "from_email": "", "from_domain": ""},
-        "auth0": {"domain": "", "client_id": "", "client_secret": ""},
+        "sendgrid": {
+            "api_key": "",
+            "from_email": "",
+            "from_domain": "",
+            "reply_to": "",
+        },
+        "auth0": {
+            "domain": "",
+            "client_id": "",
+            "client_secret": "",
+        },
         "google_cloud": {"project_id": ""},
     }
 )

@@ -60,7 +60,7 @@ def main():
     )
     parser.add_argument(
         "--table",
-        type=lambda val: getattr(tables, val.upper()),
+        type=lambda val: tables.TABLES[val.lower()],
         required=True,
     )
 
