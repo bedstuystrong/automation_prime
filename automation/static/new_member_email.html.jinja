@@ -1,5 +1,7 @@
 {% extends "email_template.html.jinja" %}
 
+{% block subject %}{{ subject }}{% endblock %}
+
 {% block title %}
   Welcome to Bed-Stuy Strong!
 {% endblock %}
@@ -10,22 +12,25 @@
 {% block main %}
   <article>
     <h2>Getting Started</h2>
-
-    The best way to get started is reading through our New Member Guide. This guide will walk you through accessing our Member Hub, where you can find our community calendar, member opportunities, and key information about our many projects.<br>
+    <p>The best way to get started is reading through our <a href="https://docs.google.com/presentation/d/14VwmCJDqfjOM9IWMaEJzDsC7sVKZUwvkVJ8Sn0P9LSw/edit">New Member Guide</a>.</p>
+    <p>This guide will walk you through accessing our <a href="https://home.bedstuystrong.com/">Member Hub</a>, where you can find our community calendar, volunteer opportunities, and key information about our many projects and modes of aid.</p>
 
     <h2>Staying in the Loop</h2>
-    Keep an eye out in your email for our weekly newsletter, where we circulate updates from around the community. If you’re on Instagram, we suggest following us to stay in the loop as well. You’ll also receive a separate email invitation to join our online forum on Slack, where you can send direct messages to neighbors and coordinate together in real time.<br>
+    <p>Keep an eye out in your email for our newsletter, where we circulate updates from around the community. If you’re on Instagram, we suggest <a href="https://instagram.com/bedstuystrong">following us there</a> too. You’ll also receive a separate email invitation to join our online forum on Slack, where you can send direct messages to neighbors and coordinate together in real time.</p>
 
     <h2>Supporting Our Food Access Operation</h2>
-    A staggering 1 in 4 families in New York City is currently food insecure, up from 1 in 8 before the current health crisis. Donating funds and membering time are two great ways to have a direct impact on the safety and well-being of many Brooklynites experiencing hardship.<br><br>
-
-    Our grocery delivery operation is our biggest project, and help is always needed! If you’re able to commit to membering with our intake phone line or delivering groceries once a week, and/or supporting us financially, it would make a big difference.<br>
+    <p>A staggering 1 in 4 families in New York City is currently food insecure, up from 1 in 8 before the current health crisis. Donating funds and volunteering time are two great ways to have a direct impact on the safety and well-being of many Brooklynites experiencing hardship.</p>
+    <p>Our grocery delivery operation is our biggest project, and help is <em>always</em> needed! If you’re able to commit to volunteering with our intake phone line or delivering groceries once a week, and/or supporting us financially, this makes the biggest material difference in our neighbors lives.</p>
+    <p>That said, all the ways we show up for each other are important.  Whether it’s sharing medical supplies, offering social support, learning from one another about the political moment, or posting photos of our pets to make each other smile. Currently, the easiest place to do this is in our online forum on Slack.</p>
 
     <h2>Questions?</h2>
-    Check out our FAQs! You can also email us at bedstuystrong@bedstuystrong.com, or in Slack share your question in the #ask_me_anything channel.<br><br>
-    We are excited to have you as a Bed-Stuy Strong member: our work is best done together.<br><br>
+    <p>Check out our <a href="https://home.bedstuystrong.com/doc/frequently-asked-questions-Jk0NS5BPpp">FAQs</a>! You can also email us at <a href="mailto:bedstuystrong@bedstuystrong.com">bedstuystrong@bedstuystrong.com</a>, or in Slack, share your question in the <a href="https://bedstuystrong.slack.com/archives/C01815UJM47">#ask_me_anything</a> channel.</p>
+    <p>We are excited to have you as a Bed-Stuy Strong member: our work is best done together.</p>
 
-    Thanks,<br>
-    BSS Onboarding Working Group
+    <br>
+    <p>
+      Thanks,<br>
+      BSS Community Building Team
+    </p>
   </article>
 {% endblock %}
