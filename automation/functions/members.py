@@ -7,7 +7,7 @@ from ..utils import templates
 logger = logging.getLogger(__name__)
 
 
-def on_new(member, *, slack_client, sendgrid_client, from_email):
+def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
     # TODO : the member may not have joined slack yet, so we should
     # try and update their slack info again later
 
@@ -21,7 +21,7 @@ def on_new(member, *, slack_client, sendgrid_client, from_email):
     else:
         logger.warning("Couldn't find slack user for: {}".format(member.email))
 
-    # auth0_client.create_user(member.email, member.name)
+    auth0_client.create_user(member.email, member.name)
 
     # Send the new member email
     sendgrid_client.send(

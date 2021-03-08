@@ -41,6 +41,7 @@ def test_on_new():
         test_member,
         slack_client=mock_slack_client,
         sendgrid_client=mock_sendgrid_client,
+        auth0_client=mock_auth0_client,
         from_email="test@example.org",
     )
 
