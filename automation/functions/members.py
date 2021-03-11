@@ -1,6 +1,6 @@
 import logging
 
-import sendgrid.helpers.mail
+from sendgrid.helpers.mail import Mail, Email
 
 from ..utils import templates
 
@@ -22,16 +22,18 @@ def on_new(member, *, slack_client, sendgrid_client, from_email):
         logger.warning("Couldn't find slack user for: {}".format(member.email))
 
     # Send the new member email
-    subject = "Welcome to Bed-Stuy Strong {}!".format(member.name)
-    sendgrid_client.send(
-        sendgrid.helpers.mail.Mail(
-            from_email=from_email,
-            to_emails=member.email,
-            subject=subject,
-            html_content=templates.render(
-                "new_member_email.html.jinja", subject=subject
-            ),
-        )
+    subject = "Welcome to Bed-Stuy Strong!"
+    message = Mail(
+        from_email=Email(
+            email="community@mail.bedstuystrong.com", name="Bed-Stuy Strong"
+        ),
+        to_emails=member.email,
+        subject=subject,
+        html_content=templates.render(
+            "new_member_email.html.jinja", subject=subject, member=member
+        ),
     )
+    message.reply_to = "community@bedstuystrong.com"
+    sendgrid_client.send(message)
 
     member.status = "Processed"
