@@ -30,7 +30,10 @@ def on_new(member, *, slack_client, sendgrid_client, from_email):
         to_emails=member.email,
         subject=subject,
         html_content=templates.render(
-            "new_member_email.html.jinja", subject=subject, member=member
+            "new_member_email.html.jinja",
+            inline_css=True,
+            subject=subject,
+            member=member,
         ),
     )
     message.reply_to = "community@bedstuystrong.com"
