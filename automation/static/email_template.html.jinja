@@ -133,10 +133,10 @@
                 <img src="https://bedstuystrong.com/logo.png" alt="Bed-Stuy Strong logo" height="100" width="142">
             </a>
             <!-- The h1 is the main heading of the document and should come first. -->
-            <h1>
+            {% if self.title() or self.subtitle() %}{<h1>
                 {% block title%}{% endblock %}<br>
                 <span style="font-size: 24px; font-weight: 600; color: #444444;">{% block subtitle %}{% endblock %}</span>
-            </h1>
+            </h1>{% endif %}
         </header>
 
         <!-- Main content section. Main is a useful landmark element. -->
