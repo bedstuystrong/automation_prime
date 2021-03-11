@@ -23,6 +23,7 @@ nodeenv==1.5.0
 packaging==20.8
 pathspec==0.8.0
 pluggy==0.13.1
+premailer==3.7.0
 pre-commit==2.9.2
 py==1.10.0
 pydantic==1.8

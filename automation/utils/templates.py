@@ -21,6 +21,8 @@ import re
 
 import jinja2
 from jinja2.utils import select_autoescape
+from premailer import transform
+
 
 STATIC_PATH = Path(__file__).parent.parent / "static"
 
@@ -41,5 +43,9 @@ def get_environment():
     return env
 
 
-def render(template_name, **kwargs):
-    return get_environment().get_template(template_name).render(**kwargs)
+def render(template_name, inline_css=False, **kwargs):
+    rendered = get_environment().get_template(template_name).render(**kwargs)
+    if inline_css:
+        return transform(rendered, keep_style_tags=True)
+    else:
+        return rendered
