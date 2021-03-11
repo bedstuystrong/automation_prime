@@ -8,7 +8,9 @@
 
 {% block main %}
   <article>
-    <p>Hi {{member.name|default('neighbor')}},</p>
+    {% set name = member|default('neighbor') %}
+    {% set names = name.split(' ') %}
+    <p>Hi {{ names[0] }},</p>
     <p>Welcome to Bed-Stuy Strong. We’re so glad you’re here.</p>
 
     <h2>Getting Started</h2>
