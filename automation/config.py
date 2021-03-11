@@ -24,6 +24,12 @@ class AirtableConfig(pydantic.BaseModel):
     table_names: Dict[str, str]
 
 
+class Auth0Config(pydantic.BaseModel):
+    domain: str
+    client_id: str
+    client_secret: str
+
+
 class SlackConfig(pydantic.BaseModel):
     api_key: str
     test_user_email: str
@@ -39,6 +45,7 @@ class SendgridConfig(pydantic.BaseModel):
 
 class Config(pydantic.BaseModel):
     airtable: AirtableConfig
+    auth0: Auth0Config
     slack: SlackConfig
     sendgrid: SendgridConfig
     google_cloud: Optional[GoogleCloudConfig]

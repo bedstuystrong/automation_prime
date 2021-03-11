@@ -5,7 +5,7 @@ import sendgrid
 
 from . import config, models
 from .functions import delivery, inbound, members
-from .clients import airtable, slack
+from .clients import airtable, auth0, secrets, slack
 
 
 class PollableTable(abc.ABC):
@@ -49,6 +49,16 @@ class EmailMixin:
         return self.conf.sendgrid.reply_to
 
 
+class Auth0Mixin:
+    @cached_property
+    def secrets_client(self):
+        return secrets.SecretsClient(self.conf.google_cloud)
+
+    @cached_property
+    def auth0_client(self):
+        return auth0.Auth0Client(self.conf.auth0, self.secrets_client)
+
+
 class Inbound(PollableTable):
 
     table_spec = airtable.TableSpec(
@@ -60,7 +70,7 @@ class Inbound(PollableTable):
         inbound.on_new(record)
 
 
-class Members(PollableTable, SlackMixin, EmailMixin):
+class Members(PollableTable, SlackMixin, EmailMixin, Auth0Mixin):
 
     table_spec = airtable.TableSpec(
         name="members",
@@ -73,6 +83,7 @@ class Members(PollableTable, SlackMixin, EmailMixin):
                 record,
                 slack_client=self.slack_client,
                 sendgrid_client=self.sendgrid_client,
+                auth0_client=self.auth0_client,
                 from_email=self.from_email,
             )
 

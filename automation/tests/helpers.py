@@ -29,6 +29,11 @@ TEST_CONFIG = config.Config(
             "from_domain": "",
             "reply_to": "",
         },
+        "auth0": {
+            "domain": "",
+            "client_id": "",
+            "client_secret": "",
+        },
         "google_cloud": {"project_id": ""},
     }
 )

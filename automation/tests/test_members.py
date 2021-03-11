@@ -6,7 +6,7 @@ from .helpers import (
     get_random_slack_user_from_member,
     get_random_member,
 )
-from ..clients import slack
+from ..clients import slack, auth0
 from ..functions import members
 
 
@@ -24,6 +24,13 @@ def test_on_new():
 
         return test_slack_user
 
+    def mock_create_user(email, name):
+        assert email == test_member.email
+        assert name == test_member.name
+
+    mock_auth0_client = mock.Mock(auth0.Auth0Client, autospec=True)
+    mock_auth0_client.create_user.side_effect = mock_create_user
+
     mock_slack_client = mock.Mock(slack.SlackClient, autospec=True)
     mock_slack_client.users_lookupByEmail.side_effect = (
         mock_users_lookupByEmail
@@ -34,6 +41,7 @@ def test_on_new():
         test_member,
         slack_client=mock_slack_client,
         sendgrid_client=mock_sendgrid_client,
+        auth0_client=mock_auth0_client,
         from_email="test@example.org",
     )
 
@@ -42,3 +50,4 @@ def test_on_new():
     assert test_member.slack_user_id == test_slack_user.id
 
     assert mock_sendgrid_client.send.call_count == 1
+    assert mock_auth0_client.create_user.call_count == 1
