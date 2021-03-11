@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
-    # Look up and store the member's slack metadata
+    # Look up (or create) and store the member's slack metadata
     slack_user = slack_client.users_lookupByEmail(member.email)
     if slack_user is None:
         slack_user = slack_client.users_invite(member.email, member.name)
