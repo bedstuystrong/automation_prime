@@ -38,7 +38,6 @@ def get_environment():
         autoescape=select_autoescape(["HTML"]),
         trim_blocks=True,
         lstrip_blocks=True,
-        undefined=jinja2.ChainableUndefined,
     )
     env.filters["digits_only"] = digits_only
     return env
