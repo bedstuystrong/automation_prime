@@ -3,12 +3,12 @@
 {% block subject %}{{ subject }}{% endblock %}
 
 {% block preview %}
-  We're so glad you're here.
+  We're so glad you're here. The best way to get started is to read through our New Member Guide.
 {% endblock %}
 
 {% block main %}
   <article>
-    {% set name = member|default('neighbor') %}
+    {% set name = member.name|default('neighbor') %}
     {% set names = name.split(' ') %}
     <p>Hi {{ names[0] }},</p>
     <p>Welcome to Bed-Stuy Strong. We’re so glad you’re here.</p>
