@@ -36,7 +36,7 @@ regex==2020.7.14
 requests==2.24.0
 sendgrid==6.4.8
 six==1.15.0
-slack-sdk==3.1.0
+slack-sdk==3.4.2
 starkbank-ecdsa==1.1.0
 structlog==21.1.0
 tenacity==6.3.1
