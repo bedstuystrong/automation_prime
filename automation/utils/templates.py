@@ -18,6 +18,7 @@ template use `{{ member.name }}` instead of `{{ name }}`.
 import functools
 from pathlib import Path
 import re
+import logging
 
 import jinja2
 from jinja2.utils import select_autoescape
@@ -46,6 +47,10 @@ def get_environment():
 def render(template_name, inline_css=False, **kwargs):
     rendered = get_environment().get_template(template_name).render(**kwargs)
     if inline_css:
-        return transform(rendered, keep_style_tags=True)
+        return transform(
+            rendered,
+            keep_style_tags=True,
+            cssutils_logging_level=logging.ERROR,
+        )
     else:
         return rendered
