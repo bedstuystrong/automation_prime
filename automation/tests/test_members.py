@@ -45,7 +45,6 @@ def test_on_new():
         from_email="test@example.org",
     )
 
-    assert test_member.slack_handle == test_slack_user.get_handle()
     assert test_member.slack_email == test_slack_user.profile.email
     assert test_member.slack_user_id == test_slack_user.id
 
