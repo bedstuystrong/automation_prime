@@ -9,8 +9,11 @@ from six.moves import xrange
 import slack_sdk
 from slack_sdk import scim
 from slack_sdk.scim.v1.user import UserEmail
+import structlog
 
 from automation.config import SlackConfig
+
+log = structlog.get_logger("slack_api")
 
 ##########
 # MODELS #
@@ -132,14 +135,23 @@ class SlackClient:
         return create_result.user
 
     def _resend_invite(self, email):
-        headers = {
-            "Authorization": "Bearer %s" % self._resend_invite_secret,
-        }
-        res = requests.post(
-            self._resend_invite_webhook, headers=headers, json={"email": email}
-        )
-        res.raise_for_status()
-        return res.text
+        try:
+            headers = {
+                "Authorization": "Bearer %s" % self._resend_invite_secret,
+            }
+            res = requests.post(
+                self._resend_invite_webhook,
+                headers=headers,
+                json={"email": email},
+            )
+            res.raise_for_status()
+            return res.text
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == requests.codes.not_found:
+                log.warning("Failed to send invite", email=email)
+                return None
+            else:
+                raise
 
     def users_lookupByEmail(self, email):
         try:
