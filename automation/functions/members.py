@@ -1,29 +1,29 @@
-import logging
-
 from sendgrid.helpers.mail import Mail, Email
+import structlog
 
 from ..utils import templates
 
-logger = logging.getLogger(__name__)
+log = structlog.get_logger("poll_members")
 
 
 def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
-    # TODO : the member may not have joined slack yet, so we should
-    # try and update their slack info again later
-
-    # Lookup and store the member's slack metadata
+    log.info("on_new")
+    # Look up (or create) and store the member's slack metadata
     slack_user = slack_client.users_lookupByEmail(member.email)
+    if slack_user is None:
+        log.info("Sending Slack invite")
+        slack_user = slack_client.users_invite(member.email, member.name)
 
-    if slack_user is not None:
-        member.slack_handle = slack_user.get_handle()
-        member.slack_email = slack_user.profile.email
-        member.slack_user_id = slack_user.id
-    else:
-        logger.warning("Couldn't find slack user for: {}".format(member.email))
+    member.slack_handle = slack_user.get_handle()
+    member.slack_email = slack_user.profile.email
+    member.slack_user_id = slack_user.id
 
+    # Create Auth0 user for Member Hub
+    log.info("Creating Auth0 user")
     auth0_client.create_user(member.email, member.name)
 
     # Send the new member email
+    log.info("Sending welcome email")
     subject = "Welcome to Bed-Stuy Strong!"
     message = Mail(
         from_email=Email(
@@ -42,3 +42,4 @@ def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
     sendgrid_client.send(message)
 
     member.status = "Processed"
+    log.info("on_new completed")
