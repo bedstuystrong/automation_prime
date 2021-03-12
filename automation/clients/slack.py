@@ -132,7 +132,11 @@ class SlackClient:
             emails=[UserEmail(value=email, primary=True)],
         )
         create_result = self._slack_scim_client.create_user(user)
-        return create_result.user
+        if create_result.status_code == 201:
+            return create_result.user
+        else:
+            log.error(create_result.errors.description, email=email)
+            return None
 
     def _resend_invite(self, email):
         try:
@@ -169,11 +173,12 @@ class SlackClient:
 
     def users_invite(self, email, name):
         user = self._create_scim_user(email, name)
-        self._resend_invite(email)
-        return User(
-            id=user.id,
-            name=name,
-            profile=Profile(
-                email=email,
-            ),
-        )
+        if user:
+            self._resend_invite(email)
+            return User(
+                id=user.id,
+                name=name,
+                profile=Profile(
+                    email=email,
+                ),
+            )

@@ -14,7 +14,6 @@ def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
         log.info("Sending Slack invite")
         slack_user = slack_client.users_invite(member.email, member.name)
 
-    member.slack_handle = slack_user.get_handle()
     member.slack_email = slack_user.profile.email
     member.slack_user_id = slack_user.id
 
