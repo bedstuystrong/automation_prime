@@ -72,10 +72,7 @@ class MemberModel(MetaBaseModel):
 
     @staticmethod
     def get_valid_statuses():
-        return {
-            "New",
-            "Processed",
-        }
+        return {"New", "Processed", "Inactive"}
 
 
 class IntakeModel(MetaBaseModel):
