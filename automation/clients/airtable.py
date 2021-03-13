@@ -117,8 +117,7 @@ class MetaBaseModel(BaseModel, abc.ABC):
     def get_valid_statuses() -> Set[str]:
         ...
 
-    @pydantic.validator("status", allow_reuse=True)
-    @pydantic.validator("meta_last_seen_status", allow_reuse=True)
+    @pydantic.validator("status", "meta_last_seen_status")
     def validate_status(cls, v):
         valid_statuses = cls.get_valid_statuses()
 
