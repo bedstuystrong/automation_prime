@@ -121,7 +121,15 @@ def main():
 
         inactive_members.append(m)
 
-    print(f"Found {len(inactive_members)} inactive members")
+    print(
+        "Found {} inactive members: {}".format(
+            len(inactive_members),
+            ", ".join(
+                f"{reason}: {count}"
+                for (reason, count) in active_reason_to_count.items()
+            ),
+        )
+    )
 
     print(f"Dumping inactive members ids to: {args.out}...")
     with open(args.out, "w", encoding="utf-8") as f:
