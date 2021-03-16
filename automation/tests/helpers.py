@@ -25,6 +25,7 @@ TEST_CONFIG = config.Config(
             "scim_api_key": "",
             "resend_invite_webhook": "",
             "resend_invite_secret": "",
+            "error_bot_webhook": "",
         },
         "sendgrid": {
             "api_key": "",
@@ -36,7 +37,6 @@ TEST_CONFIG = config.Config(
             "domain": "",
             "client_id": "",
             "client_secret": "",
-            "error_bot_webhook": "",
         },
         "google_cloud": {"project_id": ""},
     }
