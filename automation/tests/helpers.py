@@ -37,6 +37,7 @@ TEST_CONFIG = config.Config(
             "client_id": "",
             "client_secret": "",
         },
+        "mailchimp": {"api_key": "", "server_prefix": "", "list_id": ""},
         "google_cloud": {"project_id": ""},
     }
 )

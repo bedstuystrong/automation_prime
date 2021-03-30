@@ -30,6 +30,12 @@ class Auth0Config(pydantic.BaseModel):
     client_secret: str
 
 
+class MailchimpConfig(pydantic.BaseModel):
+    api_key: str
+    server_prefix: str
+    list_id: str
+
+
 class SlackConfig(pydantic.BaseModel):
     api_key: str
     test_user_email: str
@@ -49,6 +55,7 @@ class SendgridConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     airtable: AirtableConfig
     auth0: Auth0Config
+    mailchimp: MailchimpConfig
     slack: SlackConfig
     sendgrid: SendgridConfig
     google_cloud: Optional[GoogleCloudConfig]
