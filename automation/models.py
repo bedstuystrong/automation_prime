@@ -43,6 +43,7 @@ class InboundModel(MetaBaseModel):
     def validate_method(cls, v):
         if v not in {"Email", "Phone Call", "Text Message"}:
             raise ValueError("Invalid method value: {}".format(v))
+        return v
 
 
 class MemberModel(MetaBaseModel):
@@ -59,6 +60,9 @@ class MemberModel(MetaBaseModel):
         alias="Email Address (from Slack)"
     )
     slack_user_id: Optional[str] = pydantic.Field(alias="Slack User ID")
+    communication_methods: List[str] = pydantic.Field(
+        alias="Preferred Method of Communication", default_factory=list
+    )
     intake_tickets: List[str] = pydantic.Field(
         alias="Intake Member tickets", default_factory=list
     )
@@ -73,6 +77,14 @@ class MemberModel(MetaBaseModel):
     @staticmethod
     def get_valid_statuses():
         return {"New", "Processed", "Inactive"}
+
+    @pydantic.validator("communication_methods", each_item=True)
+    def validate_communication_methods(cls, v):
+        if v not in {"Email", "Text Message", "Slack", "Phone Call"}:
+            raise ValueError(
+                "Invalid communication_methods value: {}".format(v)
+            )
+        return v
 
 
 class IntakeModel(MetaBaseModel):

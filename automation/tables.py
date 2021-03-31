@@ -5,7 +5,7 @@ import sendgrid
 
 from . import config, models
 from .functions import delivery, inbound, members
-from .clients import airtable, auth0, secrets, slack
+from .clients import airtable, auth0, mailchimp, secrets, slack
 
 
 class PollableTable(abc.ABC):
@@ -35,7 +35,7 @@ class SlackMixin:
         return slack.SlackClient(self.conf.slack)
 
 
-class EmailMixin:
+class SendgridMixin:
     @cached_property
     def sendgrid_client(self):
         return sendgrid.SendGridAPIClient(self.conf.sendgrid.api_key)
@@ -59,6 +59,12 @@ class Auth0Mixin:
         return auth0.Auth0Client(self.conf.auth0, self.secrets_client)
 
 
+class MailchimpMixin:
+    @cached_property
+    def mailchimp_client(self):
+        return mailchimp.MailchimpClient(self.conf.mailchimp)
+
+
 class Inbound(PollableTable):
 
     table_spec = airtable.TableSpec(
@@ -70,7 +76,9 @@ class Inbound(PollableTable):
         inbound.on_new(record)
 
 
-class Members(PollableTable, SlackMixin, EmailMixin, Auth0Mixin):
+class Members(
+    PollableTable, Auth0Mixin, MailchimpMixin, SendgridMixin, SlackMixin
+):
 
     table_spec = airtable.TableSpec(
         name="members",
@@ -81,14 +89,14 @@ class Members(PollableTable, SlackMixin, EmailMixin, Auth0Mixin):
         if record.status == "New":
             members.on_new(
                 record,
-                slack_client=self.slack_client,
-                sendgrid_client=self.sendgrid_client,
                 auth0_client=self.auth0_client,
-                from_email=self.from_email,
+                mailchimp_client=self.mailchimp_client,
+                sendgrid_client=self.sendgrid_client,
+                slack_client=self.slack_client,
             )
 
 
-class Intake(PollableTable, EmailMixin):
+class Intake(PollableTable, SendgridMixin):
 
     table_spec = airtable.TableSpec(
         name="intake",

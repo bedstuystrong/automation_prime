@@ -6,7 +6,9 @@ from ..utils import templates
 log = structlog.get_logger("poll_members")
 
 
-def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
+def on_new(
+    member, *, auth0_client, mailchimp_client, sendgrid_client, slack_client
+):
     log.info("on_new")
     # Look up (or create) and store the member's slack metadata
     slack_user = slack_client.users_lookupByEmail(member.email)
@@ -20,6 +22,10 @@ def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
     # Create Auth0 user for Member Hub
     log.info("Creating Auth0 user")
     auth0_client.create_user(member.email, member.name)
+
+    # Subscribe to newsletter
+    if "Email" in member.communication_methods:
+        mailchimp_client.subscribe(member.email)
 
     # Send the new member email
     log.info("Sending welcome email")

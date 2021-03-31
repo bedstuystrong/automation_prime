@@ -37,6 +37,7 @@ TEST_CONFIG = config.Config(
             "client_id": "",
             "client_secret": "",
         },
+        "mailchimp": {"api_key": "", "server_prefix": "", "list_id": ""},
         "google_cloud": {"project_id": ""},
     }
 )
@@ -69,6 +70,7 @@ def get_random_member():
             "Name": get_random_string() + " " + get_random_string(),
             "Phone Number": get_random_string(),
             "Email Address": get_random_string(),
+            "Preferred Method of Communication": ["Email"],
         }
     )
 
