@@ -34,7 +34,6 @@ class SlackConfig(pydantic.BaseModel):
     api_key: str
     test_user_email: str
     test_user_id: str
-    scim_api_key: str
     resend_invite_webhook: str
     resend_invite_secret: str
 

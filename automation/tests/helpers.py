@@ -22,7 +22,6 @@ TEST_CONFIG = config.Config(
             "api_key": "",
             "test_user_email": "",
             "test_user_id": "",
-            "scim_api_key": "",
             "resend_invite_webhook": "",
             "resend_invite_secret": "",
         },
