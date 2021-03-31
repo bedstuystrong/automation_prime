@@ -6,7 +6,7 @@ from .helpers import (
     get_random_slack_user_from_member,
     get_random_member,
 )
-from ..clients import slack, auth0
+from ..clients import slack, auth0, mailchimp
 from ..functions import members
 
 
@@ -28,6 +28,9 @@ def test_on_new():
         assert email == test_member.email
         assert name == test_member.name
 
+    def mock_subscribe(email):
+        assert email == test_member.email
+
     mock_auth0_client = mock.Mock(auth0.Auth0Client, autospec=True)
     mock_auth0_client.create_user.side_effect = mock_create_user
 
@@ -35,6 +38,10 @@ def test_on_new():
     mock_slack_client.users_lookupByEmail.side_effect = (
         mock_users_lookupByEmail
     )
+
+    mock_mailchimp_client = mock.Mock(mailchimp.MailchimpClient, autospec=True)
+    mock_mailchimp_client.subscribe.side_effect = mock_subscribe
+
     mock_sendgrid_client = mock.Mock(sendgrid.SendGridAPIClient, autospec=True)
 
     members.on_new(
@@ -42,13 +49,14 @@ def test_on_new():
         slack_client=mock_slack_client,
         sendgrid_client=mock_sendgrid_client,
         auth0_client=mock_auth0_client,
-        from_email="test@example.org",
+        mailchimp_client=mock_mailchimp_client,
     )
 
     assert test_member.slack_user_id == test_slack_user.id
 
     assert mock_sendgrid_client.send.call_count == 1
     assert mock_auth0_client.create_user.call_count == 1
+    assert mock_mailchimp_client.subscribe.call_count == 1
 
     def mock_users_lookupByEmail_none(email):
         return None

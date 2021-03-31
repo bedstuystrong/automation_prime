@@ -70,6 +70,7 @@ def get_random_member():
             "Name": get_random_string() + " " + get_random_string(),
             "Phone Number": get_random_string(),
             "Email Address": get_random_string(),
+            "Preferred Method of Communication": ["Email"],
         }
     )
 
