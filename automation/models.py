@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 from typing import List, Optional
 
 import pydantic
@@ -60,11 +60,15 @@ class MemberModel(MetaBaseModel):
     )
     slack_user_id: Optional[str] = pydantic.Field(alias="Slack User ID")
     intake_tickets: List[str] = pydantic.Field(
-        alias="Intake Member tickets", default_factory=list
+        alias="Intake Volunteer tickets", default_factory=list
     )
     delivery_tickets: List[str] = pydantic.Field(
-        alias="Delivery Member tickets",
+        alias="Delivery Volunteer tickets",
         default_factory=list,
+    )
+    is_inactive: bool = pydantic.Field(
+        alias="Is Inactive?",
+        default=False,
     )
 
     def get_email(self) -> Optional[str]:
@@ -109,7 +113,9 @@ class IntakeModel(MetaBaseModel):
     )
     other_items: Optional[str] = pydantic.Field(alias="Other Items")
     recordID: str = pydantic.Field(alias="record ID")
-    date_completed: Optional[date] = pydantic.Field(alias="Completion_Date")
+    date_completed: Optional[datetime.date] = pydantic.Field(
+        alias="Completion_Date"
+    )
     can_meet_outside: Optional[bool] = pydantic.Field(alias="Can meet outside")
 
     @staticmethod

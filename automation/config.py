@@ -31,7 +31,10 @@ class Auth0Config(pydantic.BaseModel):
 
 
 class SlackConfig(pydantic.BaseModel):
-    api_key: str
+    bot_user_token: str
+    # NOTE that we only use the user token for admin API calls, and shouldn't
+    #  include it in the deployed config
+    user_token: Optional[str]
     test_user_email: str
     test_user_id: str
     scim_api_key: str
@@ -54,8 +57,13 @@ class Config(pydantic.BaseModel):
     google_cloud: Optional[GoogleCloudConfig]
 
 
-def load():
-    config_path = _CHECKOUT_ROOT / _ACTIVE_CONFIG_PATH
+def load(config_path_override=None):
+    config_path = _CHECKOUT_ROOT / (
+        _ACTIVE_CONFIG_PATH
+        if config_path_override is None
+        else config_path_override
+    )
+
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             return Config(**json.loads(f.read()))

@@ -19,7 +19,7 @@ TEST_CONFIG = config.Config(
             },
         },
         "slack": {
-            "api_key": "",
+            "bot_user_token": "",
             "test_user_email": "",
             "test_user_id": "",
             "scim_api_key": "",

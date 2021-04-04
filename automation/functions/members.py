@@ -9,10 +9,10 @@ log = structlog.get_logger("poll_members")
 def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
     log.info("on_new")
     # Look up (or create) and store the member's slack metadata
-    slack_user = slack_client.users_lookupByEmail(member.email)
+    slack_user = slack_client.users.lookup_by_email(member.email)
     if slack_user is None:
         log.info("Sending Slack invite")
-        slack_user = slack_client.users_invite(member.email, member.name)
+        slack_user = slack_client.users.invite(member.email, member.name)
 
     member.slack_email = slack_user.profile.email
     member.slack_user_id = slack_user.id
