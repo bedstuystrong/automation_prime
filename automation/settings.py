@@ -3,7 +3,7 @@ import os
 import pydantic
 
 
-AUTOMATION_ENV = os.environ.get("AUTOMATION_ENV", "prod")
+AUTOMATION_ENV = os.environ.get("AUTOMATION_ENV", "dev")
 """Which .env file to load by default."""
 
 
