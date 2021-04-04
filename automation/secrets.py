@@ -1,17 +1,38 @@
 from typing import ClassVar, Text
 
+from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import secretmanager
 from pydantic import BaseModel, SecretBytes, SecretStr
+import structlog
 
 from .settings import GoogleCloudSettings
 
 
+logger = structlog.get_logger(__name__)
+
+
+class InvalidCredentialsError(Exception):
+    """No valid credentials for Secret Manager API available."""
+
+
 class SecretsClient:
     def __init__(self, settings=GoogleCloudSettings()):
-        self._client = secretmanager.SecretManagerServiceClient()
+        # If we don't have credentials, construct a non-working SecretsClient,
+        # we'll fail later if something tries to fetch secrets, but that
+        # doesn't happen during unit tests.
+        try:
+            self._client = secretmanager.SecretManagerServiceClient()
+        except DefaultCredentialsError:
+            logger.warning(
+                "Could not connect to Secret manager with default "
+                "credentials. Secrets will be unavailable."
+            )
+            self._client = None
         self._project_id = settings.project_id
 
     def set_secret(self, name, value):
+        if self._client is None:
+            raise InvalidCredentialsError()
         secret_path = self._client.secret_path(self._project_id, name)
         self._client.add_secret_version(
             {
@@ -24,6 +45,8 @@ class SecretsClient:
         return self.get_secret(name)
 
     def get_secret(self, name):
+        if self._client is None:
+            raise InvalidCredentialsError()
         latest_secret_path = self._client.secret_version_path(
             self._project_id, name, "latest"
         )
