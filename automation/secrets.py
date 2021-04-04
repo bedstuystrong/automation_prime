@@ -32,6 +32,12 @@ class SecretsClient:
 
 
 class BaseSecret(BaseModel):
+    """Helper base class for loading secrets and validating with pydantic.
+
+    Subclasses must define _secret_name (to be unique for the Google Cloud
+    Project), and secrets are expected to contain JSON defining each pydantic
+    field in the class.
+    """
 
     _secret_name: ClassVar[Text]
     _secrets_client: SecretsClient
