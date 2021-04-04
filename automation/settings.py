@@ -8,6 +8,24 @@ AUTOMATION_ENV = os.environ.get("AUTOMATION_ENV", "prod")
 
 
 class BaseConfig:
+    """For use by pydantic BaseSettings subclasses.
+
+    All of our settings subclasses should use this as the superclass of their
+    Config inner classes, to make sure all settings across the project source
+    from the same env file (which you can control with AUTOMATION_ENV above).
+
+    A settings class should look like this::
+
+        class FooSettings(pydantic.BaseSettings):
+            my_var: str
+
+            class Config(BaseConfig):
+                env_prefix = "foo_"
+
+    This way, in .env files or in the process environment, `foo_my_var` will
+    control that setting.
+    """
+
     env_file = f"environments/{AUTOMATION_ENV}.env"
 
 
