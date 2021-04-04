@@ -2,9 +2,9 @@ import argparse
 import logging
 import sys
 
-logging.basicConfig(level=logging.INFO)
+from .. import tables
 
-from .. import tables  # noqa: E402
+logging.basicConfig(level=logging.INFO)
 
 
 def main():
