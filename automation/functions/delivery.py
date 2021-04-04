@@ -1,4 +1,5 @@
-import os
+from automation.clients.sendgrid import SendgridClient
+from pydantic import BaseSettings
 
 from python_http_client.exceptions import BadRequestsError
 from requests.exceptions import HTTPError
@@ -6,12 +7,20 @@ from sendgrid.helpers.mail import Mail
 import structlog
 from structlog.contextvars import bind_contextvars
 
-from automation.utils.templates import render
+from ..settings import BaseConfig
+from ..utils.templates import render
 
 log = structlog.get_logger("send_delivery_email")
 
-# Turn this off for debugging
-SEND_MAIL = os.environ.get("SEND_MAIL", "") == "1"
+
+class DeliverySettings(BaseSettings):
+
+    from_email: str
+    reply_to: str
+    send_mail: bool
+
+    class Config(BaseConfig):
+        env_prefix = "delivery_"
 
 
 def on_assigned(
@@ -20,8 +29,7 @@ def on_assigned(
     member_table,
     inventory,
     sendgrid_client,
-    from_email,
-    reply_to=None,
+    settings=DeliverySettings(),
 ):
     bind_contextvars(ticket_id=ticket.ticket_id)
     log.info("Sending delivery email")
@@ -34,12 +42,11 @@ def on_assigned(
 
     delivery_volunteers = get_delivery_volunteers(ticket, member_table)
     email = render_email_template(ticket, delivery_volunteers, inventory)
-    email.from_email = from_email
-    if reply_to:
-        email.add_cc(reply_to)
-        email.reply_to = reply_to
+    email.from_email = settings.from_email
+    email.add_cc(settings.reply_to)
+    email.reply_to = settings.reply_to
 
-    if not SEND_MAIL:
+    if not settings.send_mail:
         log.info(
             "Would send email", to=email.get()["personalizations"][0]["to"]
         )
@@ -144,33 +151,29 @@ class DeliveryEmailError(Exception):
 
 
 if __name__ == "__main__":
-    from automation import config, tables
-    import sendgrid
+
+    from automation import tables
     import sys
 
     if len(sys.argv) != 2:
         sys.exit("Usage: python -m automation.functions.delivery <ticket ID>")
 
-    conf = config.load()
-    intake = tables.Intake.get_airtable(conf.airtable, read_only=True)
+    intake = tables.Intake.get_airtable(read_only=True)
     try:
         ticket = next(
             intake.get_all(formula=f'{{Ticket ID}} = "{sys.argv[1]}"')
         )
     except StopIteration:
         sys.exit(f"Ticket {sys.argv[1]} not found!")
-    members = tables.Members.get_airtable(conf.airtable, read_only=True)
+    members = tables.Members.get_airtable(read_only=True)
     volunteers = [members.get(v) for v in ticket.delivery_volunteer]
-    ibhs = tables.ITEMS_BY_HOUSEHOLD_SIZE.get_airtable_client(
-        conf.airtable, read_only=True
-    )
+    ibhs = tables.ITEMS_BY_HOUSEHOLD_SIZE.get_airtable_client(read_only=True)
     inventory = Inventory(ibhs)
-    sendgrid_client = sendgrid.SendGridAPIClient(conf.sendgrid.api_key)
+    sendgrid_client = SendgridClient()
     on_assigned(
         ticket,
         member_table=members,
         inventory=inventory,
         sendgrid_client=sendgrid_client,
-        from_email=conf.sendgrid.from_email,
     )
     # print(mail.get()["content"][0]["value"])

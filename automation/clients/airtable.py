@@ -14,13 +14,14 @@ import abc
 import datetime
 import json
 import logging
-from typing import Optional, Set, Type
+from typing import Dict, Optional, Set, Type
 
 import pydantic
 import pydantic.schema
 from airtable import Airtable
 
-from automation import config
+from ..secrets import BaseSecret, SecretsClient
+from ..settings import BaseConfig
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,25 @@ class MetaBaseModel(BaseModel, abc.ABC):
         return v
 
 
+############
+# SETTINGS #
+############
+
+
+class AirtableSecrets(BaseSecret):
+
+    _secret_name = "airtable"
+    api_key: pydantic.SecretStr
+
+
+class AirtableSettings(pydantic.BaseSettings):
+    base_id: str
+    table_names: Dict[str, str]
+
+    class Config(BaseConfig):
+        env_prefix = "airtable_"
+
+
 #########
 # TABLE #
 #########
@@ -142,10 +162,17 @@ class TableSpec(pydantic.BaseModel):
     model_cls: Type[BaseModel]
 
     def get_airtable_client(
-        self, conf: config.AirtableConfig, read_only=False
+        self,
+        read_only=False,
+        secrets_client=SecretsClient(),
+        settings=AirtableSettings(),
     ):
         return AirtableClient(
-            conf, conf.table_names[self.name], self, read_only
+            settings.table_names[self.name],
+            self,
+            read_only,
+            secrets_client=secrets_client,
+            settings=settings,
         )
 
     # TODO : add a `status_to_cb` validator that calls `get_valid_statuses`
@@ -158,10 +185,18 @@ class TableSpec(pydantic.BaseModel):
 
 class AirtableClient:
     def __init__(
-        self, conf: config.AirtableConfig, airtable_name, table_spec, read_only
+        self,
+        airtable_name,
+        table_spec,
+        read_only,
+        secrets_client=SecretsClient(),
+        settings=AirtableSettings(),
     ):
+        secrets = AirtableSecrets.load(secrets_client)
         self.read_only = read_only
-        self.client = Airtable(conf.base_id, airtable_name, conf.api_key)
+        self.client = Airtable(
+            settings.base_id, airtable_name, secrets.api_key.get_secret_value()
+        )
         self.table_spec = table_spec
 
     def get(self, record_id):

@@ -1,27 +1,52 @@
 import abc
 from functools import cached_property
 
-import sendgrid
-
-from . import config, models
+from . import models
 from .functions import delivery, inbound, members
-from .clients import airtable, auth0, secrets, slack
+from .clients import airtable, auth0, sendgrid, slack
+from .secrets import SecretsClient
 
 
 class PollableTable(abc.ABC):
 
     table_spec = ...
 
-    def __init__(self, conf: config.Config, read_only=False):
-        self.conf = conf
+    def __init__(
+        self,
+        read_only=False,
+        *,
+        secrets_client=SecretsClient(),
+        airtable_settings=airtable.AirtableSettings(),
+        auth0_settings=auth0.Auth0Settings(),
+        slack_settings=slack.SlackSettings(),
+        delivery_settings=delivery.DeliverySettings(),
+    ):
         self.read_only = read_only
+        self.secrets_client = secrets_client
+        self.airtable_settings = airtable_settings
+        self.auth0_settings = auth0_settings
+        self.slack_settings = slack_settings
+        self.delivery_settings = delivery_settings
 
     @classmethod
-    def get_airtable(cls, conf: config.AirtableConfig, read_only=False):
-        return cls.table_spec.get_airtable_client(conf, read_only=read_only)
+    def get_airtable(
+        cls,
+        read_only=False,
+        secrets_client=SecretsClient(),
+        settings=airtable.AirtableSettings(),
+    ):
+        return cls.table_spec.get_airtable_client(
+            read_only=read_only,
+            secrets_client=secrets_client,
+            settings=settings,
+        )
 
     def poll_table(self):
-        client = self.get_airtable(self.conf.airtable, self.read_only)
+        client = self.get_airtable(
+            self.read_only,
+            secrets_client=self.secrets_client,
+            settings=self.airtable_settings,
+        )
         return client.poll_table(self.on_status_update)
 
     @abc.abstractmethod
@@ -32,31 +57,23 @@ class PollableTable(abc.ABC):
 class SlackMixin:
     @cached_property
     def slack_client(self):
-        return slack.SlackClient(self.conf.slack)
+        return slack.SlackClient(
+            secrets_client=self.secrets_client, settings=self.slack_settings
+        )
 
 
 class EmailMixin:
     @cached_property
     def sendgrid_client(self):
-        return sendgrid.SendGridAPIClient(self.conf.sendgrid.api_key)
-
-    @property
-    def from_email(self):
-        return self.conf.sendgrid.from_email
-
-    @property
-    def reply_to(self):
-        return self.conf.sendgrid.reply_to
+        return sendgrid.SendgridClient(secrets_client=self.secrets_client)
 
 
 class Auth0Mixin:
     @cached_property
-    def secrets_client(self):
-        return secrets.SecretsClient(self.conf.google_cloud)
-
-    @cached_property
     def auth0_client(self):
-        return auth0.Auth0Client(self.conf.auth0, self.secrets_client)
+        return auth0.Auth0Client(
+            secrets_client=self.secrets_client, settings=self.auth0_settings
+        )
 
 
 class Inbound(PollableTable):
@@ -84,7 +101,6 @@ class Members(PollableTable, SlackMixin, EmailMixin, Auth0Mixin):
                 slack_client=self.slack_client,
                 sendgrid_client=self.sendgrid_client,
                 auth0_client=self.auth0_client,
-                from_email=self.from_email,
             )
 
 
@@ -113,8 +129,7 @@ class Intake(PollableTable, EmailMixin):
                 member_table=self.member_table,
                 inventory=self.inventory,
                 sendgrid_client=self.sendgrid_client,
-                from_email=self.from_email,
-                reply_to=self.reply_to,
+                settings=self.delivery_settings,
             )
 
 

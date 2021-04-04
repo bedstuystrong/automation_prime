@@ -41,7 +41,8 @@
 		"ms-python.vscode-pylance",
 		"bungcip.better-toml",
 		"editorconfig.editorconfig",
-		"samuelcolvin.jinjahtml"
+		"samuelcolvin.jinjahtml",
+		"googlecloudtools.cloudcode"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

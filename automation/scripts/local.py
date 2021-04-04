@@ -4,7 +4,7 @@ import sys
 
 logging.basicConfig(level=logging.INFO)
 
-from .. import config, tables  # noqa: E402
+from .. import tables  # noqa: E402
 
 
 def main():
@@ -25,14 +25,13 @@ def main():
 
     args = parser.parse_args()
 
-    conf = config.load()
-    table = tables.POLLABLE_TABLES[args.table](conf, read_only=not args.live)
+    table = tables.POLLABLE_TABLES[args.table](read_only=not args.live)
 
     succeeded = True
     if args.action == "poll":
         succeeded = table.poll_table()
     elif args.action == "migrate-meta":
-        client = table.get_airtable(conf.airtable, read_only=not args.live)
+        client = table.get_airtable(read_only=not args.live)
         # TODO: once airtable-python-wrapper releases a version with batched
         # updates, make this use a paginated query and batched updates
         for record in client.get_all_with_new_status():

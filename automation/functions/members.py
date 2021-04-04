@@ -6,7 +6,7 @@ from ..utils import templates
 log = structlog.get_logger("poll_members")
 
 
-def on_new(member, *, slack_client, sendgrid_client, auth0_client, from_email):
+def on_new(member, *, slack_client, sendgrid_client, auth0_client):
     log.info("on_new")
     # Look up (or create) and store the member's slack metadata
     slack_user = slack_client.users_lookupByEmail(member.email)
