@@ -31,6 +31,18 @@ Without devcontainers, you will need a recent version of Python 3. Run `./create
 ## Developers: Contributing
 - To run tests: `pytest automation/` from the root of your checkout
 
+## Developers: Environment and Settings Management
+
+Settings are defined in `.env` files in the `environments/` directory: most of the time, you'll deal with `dev.env` locally, then deploy with `staging.env` to test out a change, and finally deploy with `prod.env` to make your change go live.
+
+Secrets, like API keys, are managed for you: they're stored in Google Secret Manager and fetched as needed. If you need access to these, ask an admin to be added.
+
+Setting schemas are managed near the code that uses them. For example, each client (in `automation.clients`) has some related settings defined with a schema, which you can access by instantiating that settings object and accessing its fields.
+
+You can select a different environment (the default is `dev`) by setting the environment variable `AUTOMATION_ENV`, for example, `AUTOMATION_ENV=staging python -m automation....`. You can override individual variables by adding those values to your environment before running something, typically a local development script. Check out the `.env` files for valid variables you can override.
+
+When deploying, you'll need to set `AUTOMATION_ENV` to either `prod` or `staging` when running `automation.scripts.setup_gcloud`: this selects which environment you deploy to.
+
 ## Environment
 
 This section covers steps required for setting up the environment for the automation.
