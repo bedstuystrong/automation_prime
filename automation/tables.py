@@ -113,12 +113,18 @@ class Intake(PollableTable, EmailMixin):
 
     @cached_property
     def member_table(self):
-        return Members.get_airtable(self.conf.airtable, self.read_only)
+        return Members.get_airtable(
+            True,
+            secrets_client=self.secrets_client,
+            settings=self.airtable_settings,
+        )
 
     @cached_property
     def inventory(self):
         items = ITEMS_BY_HOUSEHOLD_SIZE.get_airtable_client(
-            self.conf.airtable, True
+            True,
+            secrets_client=self.secrets_client,
+            settings=self.airtable_settings,
         )
         return delivery.Inventory(items)
 
