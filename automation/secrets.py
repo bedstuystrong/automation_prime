@@ -78,7 +78,14 @@ class BaseSecret(BaseModel):
 
     @staticmethod
     def _plaintext_encode(value):
-        """JSON encoder to write secrets in plaintext."""
+        """JSON encoder to write secrets in plaintext.
+
+        It's possible to set some Config options that will make .json()
+        serialize all secret values in plaintext, but we do it this way so that
+        only in save() do we serialize plaintext values. This way, if someone
+        accidentally logs secret.json() somewhere, the secret values will be
+        sanitized in logs.
+        """
         if isinstance(value, (SecretStr, SecretBytes)):
             return value.get_secret_value()
         return value
