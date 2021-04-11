@@ -21,12 +21,12 @@ class Auth0Secrets(BaseSecret):
 
     _secret_name = "auth0"
     api_token: SecretStr
+    client_id: SecretStr
+    client_secret: SecretStr
 
 
 class Auth0Settings(BaseSettings):
     domain: constr(strip_whitespace=True, min_length=1)
-    client_id: constr(strip_whitespace=True, min_length=1)
-    client_secret: str
 
     class Config(BaseConfig):
         env_prefix = "auth0_"
@@ -40,15 +40,25 @@ class Auth0Client:
             settings = Auth0Settings()
         self._base_url = "https://" + settings.domain
         self._api_url = self._base_url + "/api/v2"
-        self._client_id = settings.client_id
-        self._client_secret = settings.client_secret
         self._secrets_client = secrets_client
-        self._secret = None
+        self._secret_obj = None
+
+    @property
+    def _secret(self):
+        if self._secret_obj is None:
+            self._secret_obj = Auth0Secrets.load(self._secrets_client)
+        return self._secret_obj
+
+    @property
+    def _client_id(self):
+        return self._secret.client_id.get_secret_value()
+
+    @property
+    def _client_secret(self):
+        return self._secret.client_secret.get_secret_value()
 
     @property
     def _token(self):
-        if self._secret is None:
-            self._secret = Auth0Secrets.load(self._secrets_client)
         return self._secret.api_token.get_secret_value()
 
     @_token.setter
