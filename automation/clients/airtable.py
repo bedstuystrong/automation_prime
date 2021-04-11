@@ -18,6 +18,7 @@ from typing import Dict, Optional, Set, Type
 
 import pydantic
 import pydantic.schema
+from pydantic import constr
 from airtable import Airtable
 
 from ..secrets import BaseSecret, SecretsClient
@@ -145,7 +146,7 @@ class AirtableSecrets(BaseSecret):
 
 
 class AirtableSettings(pydantic.BaseSettings):
-    base_id: str
+    base_id: constr(strip_whitespace=True, min_length=1)
     table_names: Dict[str, str]
 
     class Config(BaseConfig):

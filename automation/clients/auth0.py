@@ -1,4 +1,4 @@
-from pydantic import BaseSettings, SecretStr
+from pydantic import BaseSettings, SecretStr, constr
 import requests
 import tenacity
 
@@ -24,8 +24,8 @@ class Auth0Secrets(BaseSecret):
 
 
 class Auth0Settings(BaseSettings):
-    domain: str
-    client_id: str
+    domain: constr(strip_whitespace=True, min_length=1)
+    client_id: constr(strip_whitespace=True, min_length=1)
     client_secret: str
 
     class Config(BaseConfig):

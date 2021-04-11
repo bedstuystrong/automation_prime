@@ -1,5 +1,5 @@
 from automation.clients.sendgrid import SendgridClient
-from pydantic import BaseSettings
+from pydantic import BaseSettings, EmailStr
 
 from python_http_client.exceptions import BadRequestsError
 from requests.exceptions import HTTPError
@@ -15,8 +15,8 @@ log = structlog.get_logger("send_delivery_email")
 
 class DeliverySettings(BaseSettings):
 
-    from_email: str
-    reply_to: str
+    from_email: EmailStr
+    reply_to: EmailStr
     send_mail: bool
 
     class Config(BaseConfig):
