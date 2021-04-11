@@ -116,9 +116,11 @@ def generate_password(length):
 #    slack = SlackClient()
 #    user = slack.users.find(email='leif@example.com')
 class SlackClient:
-    def __init__(
-        self, secrets_client=SecretsClient(), settings=SlackSettings()
-    ):
+    def __init__(self, secrets_client=None, settings=None):
+        if secrets_client is None:
+            secrets_client = SecretsClient()
+        if settings is None:
+            settings = SlackSettings()
         secrets = SlackSecrets.load(secrets_client)
         self._slack_sdk_client = slack_sdk.WebClient(
             token=secrets.api_key.get_secret_value()

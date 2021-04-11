@@ -29,8 +29,10 @@ def on_assigned(
     member_table,
     inventory,
     sendgrid_client,
-    settings=DeliverySettings(),
+    settings=None,
 ):
+    if settings is None:
+        settings = DeliverySettings()
     bind_contextvars(ticket_id=ticket.ticket_id)
     log.info("Sending delivery email")
 

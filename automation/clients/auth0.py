@@ -33,9 +33,11 @@ class Auth0Settings(BaseSettings):
 
 
 class Auth0Client:
-    def __init__(
-        self, secrets_client=SecretsClient(), settings=Auth0Settings()
-    ):
+    def __init__(self, secrets_client=None, settings=None):
+        if secrets_client is None:
+            secrets_client = SecretsClient()
+        if settings is None:
+            settings = Auth0Settings()
         self._base_url = "https://" + settings.domain
         self._api_url = self._base_url + "/api/v2"
         self._client_id = settings.client_id

@@ -164,9 +164,13 @@ class TableSpec(pydantic.BaseModel):
     def get_airtable_client(
         self,
         read_only=False,
-        secrets_client=SecretsClient(),
-        settings=AirtableSettings(),
+        secrets_client=None,
+        settings=None,
     ):
+        if secrets_client is None:
+            secrets_client = SecretsClient()
+        if settings is None:
+            settings = AirtableSettings()
         return AirtableClient(
             settings.table_names[self.name],
             self,
@@ -189,9 +193,13 @@ class AirtableClient:
         airtable_name,
         table_spec,
         read_only,
-        secrets_client=SecretsClient(),
-        settings=AirtableSettings(),
+        secrets_client=None,
+        settings=None,
     ):
+        if secrets_client is None:
+            secrets_client = SecretsClient()
+        if settings is None:
+            settings = AirtableSettings()
         secrets = AirtableSecrets.load(secrets_client)
         self.read_only = read_only
         self.client = Airtable(
@@ -259,11 +267,14 @@ class AirtableClient:
         success = True
 
         for record in self.get_all_with_new_status():
-            assert record.status is not None
-
             logger.info(
                 f"Processing '{self.table_spec.name}' record: {record}"
             )
+
+            if record.status is None:
+                logger.error(f"Record {record.id}'s status is None!")
+                success = False
+                continue
 
             try:
                 original_id = record.id
