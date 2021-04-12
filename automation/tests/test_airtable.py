@@ -1,10 +1,13 @@
+import json
+
 import pytest
 from unittest import mock
 
 from ..clients import airtable
 
 from .helpers import (
-    TEST_CONFIG,
+    TEST_ENV,
+    MockSecretsClient,
     get_random_string,
     get_random_airtable_id,
     get_random_created_at,
@@ -30,6 +33,10 @@ FOO = airtable.TableSpec(
     name="foo",
     model_cls=FooModel,
 )
+
+
+TEST_SECRETS_CLIENT = MockSecretsClient(airtable=json.dumps({"api_key": ""}))
+TEST_SETTINGS = airtable.AirtableSettings(_env_file=TEST_ENV)
 
 
 #########
@@ -101,7 +108,10 @@ def test_poll_table_basic():
                 return []
 
         mock_get.side_effect = mock_poll
-        client = FOO.get_airtable_client(TEST_CONFIG.airtable)
+        client = FOO.get_airtable_client(
+            secrets_client=TEST_SECRETS_CLIENT,
+            settings=TEST_SETTINGS,
+        )
         # Test
         poll_res = client.poll_table(on_status_update)
 
@@ -150,7 +160,9 @@ def test_poll_table_retries():
             if record.status == "New":
                 on_new_mock(record)
 
-        client = FOO.get_airtable_client(TEST_CONFIG.airtable)
+        client = FOO.get_airtable_client(
+            secrets_client=TEST_SECRETS_CLIENT, settings=TEST_SETTINGS
+        )
         poll_res = client.poll_table(on_status_update, max_num_retries=3)
 
         assert not poll_res
@@ -190,7 +202,9 @@ def test_poll_table_retries_transient():
             if record.status == "New":
                 on_new_mock(record)
 
-        client = FOO.get_airtable_client(TEST_CONFIG.airtable)
+        client = FOO.get_airtable_client(
+            secrets_client=TEST_SECRETS_CLIENT, settings=TEST_SETTINGS
+        )
         poll_res = client.poll_table(on_status_update, max_num_retries=3)
 
         assert poll_res

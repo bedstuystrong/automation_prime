@@ -1,13 +1,14 @@
 import argparse
 import contextlib
 import json
+import os
 import subprocess
 import logging
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO)
+from .. import settings
 
-from .. import config  # noqa: E402
+logging.basicConfig(level=logging.INFO)
 
 ##########
 # CONSTS #
@@ -121,7 +122,7 @@ def list_functions():
 #############
 
 
-def deploy():
+def deploy(env):
     logging.info("Deploying...")
 
     topics = list_topics()
@@ -148,7 +149,7 @@ def deploy():
                 "--source",
                 SOURCE,
                 "--set-env-vars",
-                "JSON_LOG_FORMAT=1,SEND_MAIL=1",
+                f"JSON_LOG_FORMAT=1,AUTOMATION_ENV={env}",
             ],
             stdout=subprocess.DEVNULL,
             check=True,
@@ -192,7 +193,7 @@ def deploy():
                 "json",
                 func_name,
                 "--set-env-vars",
-                "JSON_LOG_FORMAT=1",
+                f"JSON_LOG_FORMAT=1,AUTOMATION_ENV={env}",
             ],
             check=True,
             stdout=subprocess.PIPE,
@@ -263,17 +264,15 @@ def main():
 
     args = parser.parse_args()
 
-    google_cloud_config = config.load().google_cloud
+    env = os.environ.get("AUTOMATION_ENV")
+    if not env:
+        parser.error("Please set AUTOMATION_ENV to either 'prod' or 'staging'")
 
-    if google_cloud_config is None:
-        parser.error(
-            "Provided config path does not contain configuration for google "
-            "cloud."
-        )
+    google_cloud_settings = settings.GoogleCloudSettings()
 
-    with use_gcloud_project(google_cloud_config.project_id):
+    with use_gcloud_project(google_cloud_settings.project_id):
         if args.command == "deploy":
-            deploy()
+            deploy(env)
         elif args.command == "reset":
             reset()
         else:
