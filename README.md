@@ -16,7 +16,7 @@ To start, install:
 
 Next, in VS Code, open the Command Palette (`Ctrl+Shift+P`) and run `Remote-Containers: Clone Repository in Container Volume...`. Clone `https://github.com/bedstuystrong/automation_prime`, or fork that repo first and clone your fork.
 
-Once it clones the repo, it will build your development environment in a container for you, and you'll be ready to go.
+Once it clones the repo, it will build your development environment in a container for you. Run `gcloud auth` to set up your Google Cloud credentials, and you'll be ready to go.
 
 You can open a terminal and test that your environment is set up correctly:
 
