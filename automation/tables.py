@@ -67,7 +67,12 @@ class Inbound(PollableTable):
     )
 
     def on_status_update(self, record):
-        inbound.on_new(record)
+        # TODO: Verify new record status
+        if record.status is None:
+            inbound.on_new(
+                record,
+                Inbound.get_airtable(self.conf.airtable, self.read_only),
+            )
 
 
 class Members(PollableTable, SlackMixin, EmailMixin, Auth0Mixin):

@@ -168,15 +168,19 @@ class AirtableClient:
         raw = self.client.get(record_id)
         return self.table_spec.model_cls.from_airtable(raw)
 
-    def paginate_all(self, formula=None):
-        for page in self.client.get_iter(formula=formula):
+    def paginate_all(self, formula=None, max_records=None, sort=None):
+        for page in self.client.get_iter(
+            formula=formula, max_records=None, sort=None
+        ):
             page = [
                 self.table_spec.model_cls.from_airtable(raw) for raw in page
             ]
             yield page
 
-    def get_all(self, formula=None):
-        for page in self.paginate_all(formula=formula):
+    def get_all(self, formula=None, max_records=None, sort=None):
+        for page in self.paginate_all(
+            formula=formula, max_records=None, sort=None
+        ):
             yield from page
 
     def paginate_all_with_new_status(self):

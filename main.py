@@ -22,3 +22,9 @@ def poll_intake(event, context):
     table = tables.Intake(conf)
     success = table.poll_table()
     logging.info("Polling complete" if success else "Polling failed")
+
+
+def poll_inbound(event, context):
+    table = tables.Inbound(conf)
+    success = table.poll_table()
+    logging.info("Polling complete" if success else "Polling failed")
