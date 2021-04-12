@@ -52,7 +52,7 @@ This section covers steps required for setting up the environment for the automa
 1. Duplicate production base, including records and excluding comments
 2. Rename base to "STAGING"
 3. Add automation bot user to staging base (with editor permissions)
-4. Get base ID: go to airtable.com/api, select the staging base, and copy the base ID into your `config.json`
+4. When running locally, set `AUTOMATION_ENV=dev` or `AUTOMATION_ENV=staging`
 
 ## Migration Notes
 
