@@ -6,9 +6,11 @@ import requests
 import slack_sdk
 import structlog
 
-from automation.config import SlackConfig
+from ..secrets import BaseSecret, SecretsClient
+from ..settings import BaseConfig
 
 log = structlog.get_logger("slack_api")
+
 
 ##########
 # MODELS #
@@ -72,7 +74,22 @@ class User(pydantic.BaseModel):
 # CLIENT #
 ##########
 
-_USERS_NOT_FOUND = "users_not_found"
+
+class SlackSecrets(BaseSecret):
+
+    _secret_name = "slack"
+    api_key: pydantic.SecretStr
+    scim_api_key: pydantic.SecretStr
+    resend_invite_secret: pydantic.SecretStr
+
+
+class SlackSettings(pydantic.BaseSettings):
+    test_user_email: Optional[str]
+    test_user_id: Optional[str]
+    resend_invite_webhook: str
+
+    class Config(BaseConfig):
+        env_prefix = "slack_"
 
 
 class SlackErrors(enum.Enum):
@@ -88,10 +105,19 @@ class SlackErrors(enum.Enum):
 #    slack = SlackClient()
 #    user = slack.users.find(email='leif@example.com')
 class SlackClient:
-    def __init__(self, conf: SlackConfig):
-        self._slack_sdk_client = slack_sdk.WebClient(token=conf.api_key)
-        self._resend_invite_webhook = conf.resend_invite_webhook
-        self._resend_invite_secret = conf.resend_invite_secret
+    def __init__(self, secrets_client=None, settings=None):
+        if secrets_client is None:
+            secrets_client = SecretsClient()
+        if settings is None:
+            settings = SlackSettings()
+        secrets = SlackSecrets.load(secrets_client)
+        self._slack_sdk_client = slack_sdk.WebClient(
+            token=secrets.api_key.get_secret_value()
+        )
+        self._resend_invite_webhook = settings.resend_invite_webhook
+        self._resend_invite_secret = (
+            secrets.resend_invite_secret.get_secret_value()
+        )
 
     def _slack_sdk_wrapper(
         self, slack_sdk_func_name, model_type, data_key, single_result=False
