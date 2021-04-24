@@ -44,7 +44,6 @@ def test_on_new():
         auth0_client=mock_auth0_client,
     )
 
-    assert test_member.slack_email == test_slack_user.profile.email
     assert test_member.slack_user_id == test_slack_user.id
 
     assert mock_sendgrid_client.send.call_count == 1
