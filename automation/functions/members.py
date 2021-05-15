@@ -7,7 +7,7 @@ log = structlog.get_logger("poll_members")
 
 
 def on_new(
-    member, *, auth0_client, mailchimp_client, sendgrid_client, slack_client
+    member, *, slack_client, sendgrid_client, auth0_client, mailchimp_client
 ):
     log.info("on_new")
     # Look up (or create) and store the member's slack metadata

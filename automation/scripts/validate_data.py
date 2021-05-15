@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import pydantic
 
-from .. import config, tables
+from .. import tables
 
 
 def validate_table(client):
@@ -66,8 +66,7 @@ def main():
 
     args = parser.parse_args()
 
-    conf = config.load()
-    client = args.table.get_airtable_client(conf.airtable, read_only=True)
+    client = args.table.get_airtable_client(read_only=True)
 
     succeeded = validate_table(client)
 

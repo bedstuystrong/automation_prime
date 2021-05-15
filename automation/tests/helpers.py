@@ -2,45 +2,22 @@ from datetime import datetime, timedelta
 import random
 import string
 
-from .. import config
-from ..models import MemberModel
 from ..clients import slack
+from ..models import MemberModel
 
 
-TEST_CONFIG = config.Config(
-    **{
-        "airtable": {
-            "base_id": "",
-            "api_key": "",
-            "table_names": {
-                "inbound": "",
-                "volunteer": "",
-                "foo": "some table name",
-            },
-        },
-        "slack": {
-            "api_key": "",
-            "test_user_email": "",
-            "test_user_id": "",
-            "scim_api_key": "",
-            "resend_invite_webhook": "",
-            "resend_invite_secret": "",
-        },
-        "sendgrid": {
-            "api_key": "",
-            "from_email": "",
-            "from_domain": "",
-            "reply_to": "",
-        },
-        "auth0": {
-            "domain": "",
-            "client_id": "",
-            "client_secret": "",
-        },
-        "mailchimp": {"api_key": "", "server_prefix": "", "list_id": ""},
-        "google_cloud": {"project_id": ""},
-    }
-)
+TEST_ENV = "environments/test.env"
+
+
+class MockSecretsClient:
+    def __init__(self, **secrets):
+        self.secrets = secrets
+
+    def set_secret(self, name, value):
+        self.secrets[name] = value
+
+    def get_secret(self, name):
+        return self.secrets[name]
 
 
 def get_random_string(length=16):

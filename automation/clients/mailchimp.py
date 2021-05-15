@@ -1,7 +1,24 @@
 import hashlib
 import mailchimp_marketing as MailchimpMarketing
 
-from automation.config import MailchimpConfig
+from pydantic import BaseSettings, SecretStr, constr
+
+from ..secrets import BaseSecret, SecretsClient
+from ..settings import BaseConfig
+
+
+class MailchimpSecrets(BaseSecret):
+    _secret_name = "mailchimp"
+    api_key: SecretStr
+
+
+class MailchimpSettings(BaseSettings):
+    list_id: constr(strip_whitespace=True, min_length=1)
+    server_prefix: constr(strip_whitespace=True, min_length=1)
+
+    class Config(BaseConfig):
+        env_prefix = "mailchimp_"
+
 
 ##########
 # CLIENT #
@@ -9,15 +26,20 @@ from automation.config import MailchimpConfig
 
 
 class MailchimpClient:
-    def __init__(self, conf: MailchimpConfig):
+    def __init__(self, secrets_client=None, settings=None):
+        if secrets_client is None:
+            secrets_client = SecretsClient()
+        if settings is None:
+            settings = MailchimpSettings()
+        secrets = MailchimpSecrets.load(secrets_client)
         self._client = MailchimpMarketing.Client()
         self._client.set_config(
             {
-                "api_key": conf.api_key,
-                "server": conf.server_prefix,
+                "api_key": secrets.api_key.get_secret_value(),
+                "server": settings.server_prefix,
             }
         )
-        self._list_id = conf.list_id
+        self._list_id = settings.list_id
 
     def _hash(self, email):
         string = email.lower().encode(encoding="utf-8")
