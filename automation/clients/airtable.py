@@ -12,6 +12,7 @@ Includes:
 
 import abc
 import datetime
+import enum
 import json
 import logging
 from typing import Dict, Optional, Set, Type
@@ -39,53 +40,173 @@ DEFAULT_POLL_TABLE_MAX_NUM_RETRIES = 3
 ###############
 
 
-# TODO : consider not allowing users change the id field
-class BaseModel(pydantic.BaseModel, abc.ABC):
-    id: str = pydantic.Field(allow_mutation=False)
-    created_at: datetime.datetime = pydantic.Field(allow_mutation=False)
+class BaseModelState(enum.Enum):
+    NEW = "NEW"
+    """Newly created locally, not yet saved remotely"""
 
-    _snapshot = pydantic.PrivateAttr(default=None)
+    CLEAN = "CLEAN"
+    """Loaded or saved from remote, unmodified locally"""
+
+    DIRTY = "DIRTY"
+    """Contains local modifications, not yet updated remotely"""
+
+
+class BaseModel(pydantic.BaseModel, abc.ABC):
+    id: Optional[str] = pydantic.Field(...)
+    """The identifier of the record, always `None` if `state == New`"""
+    created_at: Optional[datetime.datetime] = pydantic.Field(...)
+    """Creation time of the record, always `None` if `state == New`"""
+
+    # NOTE that state must be initialized after `id` and `created_at`
+    state: BaseModelState
+    """Current state of the model"""
+
+    last_snapshot: Optional["BaseModel"] = pydantic.Field(default=None)
+    """Last snapshot taken after loading or saving to remote
+
+    Used to determine modified fields that need to be saved on the remote
+    """
+
+    modified_fields: Optional[Set[str]] = pydantic.Field(default=None)
+    """Contains a set of modified field names, automatically updated after
+    modifying a field
+    """
 
     class Config:
         allow_population_by_field_name = True
         underscore_attrs_are_private = True
         validate_assignment = True
 
-    def snapshot(self):
-        self._snapshot = self.copy(deep=True)
-
-    def get_modified_fields(self):
-        if self._snapshot is None:
+    def __init__(self, **data):
+        if "state" not in data:
             raise RuntimeError(
-                "Attempted to get modified fields without having taken a "
-                "snapshot"
+                "Base model must be initialized with a state. NOTE do not use "
+                "constructor directly; use factory methods instead."
             )
 
-        snapshot_dict = self._snapshot.dict()
-        self_dict = self.dict()
-        all_fields = snapshot_dict.keys() | self_dict.keys()
+        if "last_snapshot" in data:
+            raise RuntimeError(
+                "Base model should not be initialized with 'last_snapshot'"
+            )
 
-        modified_fields = set()
-        for field in all_fields:
-            if snapshot_dict.get(field) != self_dict.get(field):
-                modified_fields.add(field)
+        if "modified_fields" in data:
+            raise RuntimeError(
+                "Base model should not be initialized with 'modified_fields'"
+            )
 
-        return modified_fields
+        super().__init__(**data)
+        # NOTE that our initial snapshot won't capture any modifications that
+        # happened during initialization (e.g. via a pydantic validator in
+        # a subclass)
+        #
+        # TODO : consider snapshotting `data` directly
+        self.snapshot()
+
+    @pydantic.root_validator()
+    def validate_state_invariants(cls, values):
+        """Validates and modifies state invariants"""
+        cur_state = values["state"]
+
+        if (
+            cur_state == BaseModelState.CLEAN
+            or cur_state == BaseModelState.DIRTY
+        ):
+            if values["id"] is None:
+                raise ValueError(
+                    "Models in 'CLEAN' or 'DIRTY' state must have an 'id'"
+                )
+
+            if values["created_at"] is None:
+                raise ValueError(
+                    "Models in 'CLEAN' or 'DIRTY' state must have an "
+                    "'created_at'"
+                )
+
+        # Check to see if any fields have changed since the last snapshot,
+        # and update `state` and `modified_fields`
+        if (
+            cur_state != BaseModelState.NEW
+            and (last_snapshot := values.get("last_snapshot")) is not None
+        ):
+            modified_fields = values["modified_fields"]
+
+            snapshot_dict = last_snapshot.dict()
+            # NOTE that we exclude any fields in `BaseModel` when checking for
+            # modified fields
+            relevant_fields = (
+                snapshot_dict.keys() | values.keys()
+            ) - BaseModel.__fields__.keys()
+            modified_fields = {
+                field
+                for field in relevant_fields
+                if snapshot_dict.get(field) != values.get(field)
+            }
+
+            if len(modified_fields) != 0:
+                values["state"] = BaseModelState.DIRTY
+                values["modified_fields"] = modified_fields
+            else:
+                values["state"] = BaseModelState.CLEAN
+                values["modified_fields"] = set()
+
+        return values
+
+    @pydantic.validator("id", "created_at")
+    def validate_assignment(cls, v, /, field, values):
+        """Validates assignments to `id` and `created_at`"""
+        if values.get("state") is None:
+            return v
+
+        if v is not None and values["state"] != BaseModelState.NEW:
+            raise ValueError(
+                f"Field '{field.name}' may only be set when state is 'NEW' "
+                f"(current state): {values['state']}"
+            )
+
+        return v
+
+    # METHODS
+
+    def snapshot(self):
+        """Takes a snapshot of the model's current state"""
+        self.last_snapshot = self.copy(deep=True)
+        self.modified_fields = set()
+
+    # (DE)SERIALIZATION METHODS
 
     @classmethod
-    def from_airtable(cls, raw_dict):
-        model = cls(
+    def from_airtable(cls, **raw_dict):
+        """Load a model from raw airtable data"""
+        res = cls(
+            state=BaseModelState.CLEAN,
             id=raw_dict["id"],
             created_at=raw_dict["createdTime"],
             **raw_dict["fields"],
         )
-        model.snapshot()
-        return model
+        res.snapshot()
+        return res
+
+    @classmethod
+    def new(cls, **data):
+        """Create a new model from provided data"""
+        if "state" in data:
+            raise RuntimeError(
+                "State may not be provided when creating a new "
+                f"model: {data['state']}"
+            )
+
+        return cls(
+            state=BaseModelState.NEW,
+            id=None,
+            created_at=None,
+            **data,
+        )
 
     def to_airtable(self, modified_only=False):
+        """Serialize model to airtable format"""
         include = None
         if modified_only:
-            include = self.get_modified_fields()
+            include = self.modified_fields
 
         # NOTE that `pydantic.BaseModel.dict()` doesn't serialize all types to
         # strings, so we have to use `pydantic.BaseModel.json()` to dump the
@@ -95,8 +216,18 @@ class BaseModel(pydantic.BaseModel, abc.ABC):
                 by_alias=True,
                 exclude_none=True,
                 include=include,
+                # TODO : once old automation is deprecated, remove `_meta` from
+                # `exclude`
+                #
                 # Exclude _meta so that only the node automation controls it.
-                exclude={"id", "created_at", "_meta"},
+                exclude={
+                    "state",
+                    "id",
+                    "created_at",
+                    "last_snapshot",
+                    "modified_fields",
+                    "_meta",
+                },
             )
         )
 
@@ -104,6 +235,9 @@ class BaseModel(pydantic.BaseModel, abc.ABC):
             "id": self.id,
             "fields": fields,
         }
+
+
+BaseModel.update_forward_refs()
 
 
 # TODO : should this class inherit from ABC?
@@ -188,6 +322,10 @@ class TableSpec(pydantic.BaseModel):
 ##########
 
 
+class IncompatibleModelStateError(Exception):
+    """Thrown when client operation is not compatible with model state"""
+
+
 class AirtableClient:
     def __init__(
         self,
@@ -210,12 +348,12 @@ class AirtableClient:
 
     def get(self, record_id):
         raw = self.client.get(record_id)
-        return self.table_spec.model_cls.from_airtable(raw)
+        return self.table_spec.model_cls.from_airtable(**raw)
 
     def paginate_all(self, formula=None):
         for page in self.client.get_iter(formula=formula):
             page = [
-                self.table_spec.model_cls.from_airtable(raw) for raw in page
+                self.table_spec.model_cls.from_airtable(**raw) for raw in page
             ]
             yield page
 
@@ -246,10 +384,44 @@ class AirtableClient:
         for page in self.paginate_all_with_new_status():
             yield from page
 
+    def insert(self, model):
+        if self.read_only:
+            logger.info(f"Not inserting {model.id} in read-only mode")
+            return
+
+        if model.state != BaseModelState.NEW:
+            raise IncompatibleModelStateError(
+                f"Cannot insert model in '{model.state}' state, must be "
+                "in 'NEW' state"
+            )
+
+        res = self.client.insert(
+            model.to_airtable()["fields"],
+        )
+
+        model.id = res["id"]
+        model.created_at = res["createdTime"]
+
+        # Airtable record has been created, take a new snapshot
+        model.snapshot()
+        model.state = BaseModelState.CLEAN
+
     def update(self, model):
         if self.read_only:
-            logger.info(f"Not updating {model.id} in read-only mode")
+            logger.info(f"Not updating model '{model.id}' in read-only mode")
             return
+
+        if model.state == BaseModelState.NEW:
+            raise IncompatibleModelStateError(
+                "Cannot update a model in 'NEW' state"
+            )
+        elif model.state == BaseModelState.CLEAN:
+            logger.debug("Provided model in 'CLEAN' state, skipping update.")
+            return
+        elif model.state == BaseModelState.DIRTY:
+            pass
+        else:
+            raise RuntimeError(f"Unknown model state: {model.state}")
 
         self.client.update(
             model.id,
@@ -258,6 +430,7 @@ class AirtableClient:
 
         # Airtable record has been updated, take a new snapshot
         model.snapshot()
+        model.state = BaseModelState.CLEAN
 
     # TODO : handle missing statuses (e.g. airtable field was updated)
     def poll_table(

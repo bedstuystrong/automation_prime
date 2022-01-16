@@ -44,29 +44,100 @@ TEST_SETTINGS = airtable.AirtableSettings(_env_file=TEST_ENV)
 #########
 
 
+def test_model_dirty_basic():
+    test_model = FooModel(
+        state=airtable.BaseModelState.CLEAN,
+        id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
+        name="foo",
+        status="New",
+    )
+    assert test_model.state == airtable.BaseModelState.CLEAN
+    test_model.name = "bar"
+    assert test_model.state == airtable.BaseModelState.DIRTY
+    test_model.name = "foo"
+    assert test_model.state == airtable.BaseModelState.CLEAN
+
+
+def test_model_modified_fields_basic():
+    test_model = FooModel(
+        state=airtable.BaseModelState.CLEAN,
+        id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
+        status="New",
+    )
+    assert test_model.state == airtable.BaseModelState.CLEAN
+    assert test_model.modified_fields == set()
+    test_model.name = "bar"
+    assert test_model.state == airtable.BaseModelState.DIRTY
+    assert test_model.modified_fields == {"name"}
+
+
+def test_model_modified_fields_empty_on_new():
+    test_model = FooModel(
+        state=airtable.BaseModelState.NEW,
+        id=get_random_airtable_id(),
+        created_at=get_random_created_at(),
+        status="New",
+    )
+    assert test_model.state == airtable.BaseModelState.NEW
+    assert test_model.modified_fields == set()
+    test_model.name = "bar"
+    assert test_model.state == airtable.BaseModelState.NEW
+    assert test_model.modified_fields == set()
+
+    # TODO : fill this out
+
+
 def test_snapshot_basic():
     test_model = FooModel(
+        state=airtable.BaseModelState.CLEAN,
         id=get_random_airtable_id(),
         created_at=get_random_created_at(),
         status="New",
     )
 
-    # Getting modified fields before a snapshot should fail
-    with pytest.raises(RuntimeError):
-        test_model.get_modified_fields()
-
-    test_model.snapshot()
-    assert test_model.get_modified_fields() == set()
+    assert test_model.modified_fields == set()
 
     test_model.name = "bar"
 
-    assert test_model.get_modified_fields() == {"name"}
+    assert test_model.modified_fields == {"name"}
     assert test_model.to_airtable(modified_only=True)["fields"].keys() == {
         "name"
     }
 
     test_model.snapshot()
-    assert test_model.get_modified_fields() == set()
+    assert test_model.modified_fields == set()
+
+
+def test_incompatible_state_errors():
+    with mock.patch("airtable.Airtable.insert"), mock.patch(
+        "airtable.Airtable.update"
+    ):
+        client = FOO.get_airtable_client(
+            secrets_client=TEST_SECRETS_CLIENT,
+            settings=TEST_SETTINGS,
+        )
+
+        with pytest.raises(airtable.IncompatibleModelStateError):
+            client.insert(
+                FooModel(
+                    state=airtable.BaseModelState.CLEAN,
+                    id=get_random_airtable_id(),
+                    created_at=get_random_created_at(),
+                    status="New",
+                )
+            )
+
+        with pytest.raises(airtable.IncompatibleModelStateError):
+            client.update(
+                FooModel(
+                    state=airtable.BaseModelState.NEW,
+                    id=None,
+                    created_at=None,
+                    status="New",
+                )
+            )
 
 
 def test_poll_table_basic():
@@ -78,6 +149,7 @@ def test_poll_table_basic():
     ) as mock_update:
         # Test data
         test_model = FooModel(
+            state=airtable.BaseModelState.CLEAN,
             id=get_random_airtable_id(),
             created_at=get_random_created_at(),
             status="New",
@@ -143,6 +215,7 @@ def test_poll_table_retries():
         f"{airtable.__name__}.AirtableClient.update"
     ) as mock_update:
         test_model = FooModel(
+            state=airtable.BaseModelState.CLEAN,
             id=get_random_airtable_id(),
             created_at=get_random_created_at(),
             status="New",
@@ -180,6 +253,7 @@ def test_poll_table_retries_transient():
         f"{airtable.__name__}.AirtableClient.update"
     ) as mock_update:
         test_model = FooModel(
+            state=airtable.BaseModelState.CLEAN,
             id=get_random_airtable_id(),
             created_at=get_random_created_at(),
             status="New",

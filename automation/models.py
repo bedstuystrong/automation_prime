@@ -52,10 +52,10 @@ class MemberModel(MetaBaseModel):
     phone_number: Optional[str] = pydantic.Field(alias="Phone Number")
     slack_user_id: Optional[str] = pydantic.Field(alias="Slack User ID")
     intake_tickets: List[str] = pydantic.Field(
-        alias="Intake Member tickets", default_factory=list
+        alias="Intake Volunteer tickets", default_factory=list
     )
     delivery_tickets: List[str] = pydantic.Field(
-        alias="Delivery Member tickets",
+        alias="Delivery Volunteer tickets",
         default_factory=list,
     )
 
