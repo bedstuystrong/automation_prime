@@ -154,6 +154,7 @@ class BaseModel(pydantic.BaseModel, abc.ABC):
     @pydantic.validator("id", "created_at")
     def validate_assignment(cls, v, /, field, values):
         """Validates assignments to `id` and `created_at`"""
+        # NOTE that `state` is initialized after `id` and `created_at`
         if values.get("state") is None:
             return v
 
@@ -189,10 +190,17 @@ class BaseModel(pydantic.BaseModel, abc.ABC):
     @classmethod
     def new(cls, **data):
         """Create a new model from provided data"""
-        if "state" in data:
+        if (
+            len(
+                invalid_field_names := (
+                    BaseModel.__fields__.keys() & data.keys()
+                )
+            )
+            != 0
+        ):
             raise RuntimeError(
-                "State may not be provided when creating a new "
-                f"model: {data['state']}"
+                "Provided data contains invalid fields: "
+                + ", ".join(invalid_field_names)
             )
 
         return cls(

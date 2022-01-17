@@ -86,7 +86,22 @@ def test_model_modified_fields_empty_on_new():
     assert test_model.state == airtable.BaseModelState.NEW
     assert test_model.modified_fields == set()
 
-    # TODO : fill this out
+
+def test_model_new_invalid_field_error():
+    # Control
+    FooModel.new(status="New")
+
+    with pytest.raises(RuntimeError):
+        FooModel.new(
+            id="1",
+            status="New",
+        )
+
+    with pytest.raises(RuntimeError):
+        FooModel.new(
+            state=airtable.BaseModelState.CLEAN,
+            status="New",
+        )
 
 
 def test_snapshot_basic():
