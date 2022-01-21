@@ -20,6 +20,7 @@ from automation.functions.delivery import (
     render_email_template,
 )
 from automation.models import IntakeModel, MemberModel
+from automation.clients.airtable import BaseModelState
 
 
 @given(
@@ -34,6 +35,7 @@ def test_render_email_template(
     ticket = data.draw(
         builds(
             IntakeModel,
+            state=just(BaseModelState.CLEAN),
             delivery_volunteer=just([volunteer_id]),
             status=just("Assigned / In Progress"),
             # Make sure none of these are empty, check_ready_to_send should
@@ -52,6 +54,7 @@ def test_render_email_template(
             MemberModel,
             **{
                 "id": just(volunteer_id),
+                "state": just(BaseModelState.CLEAN),
                 "Name": text(
                     alphabet=characters(
                         whitelist_categories=("L", "Zs"),
@@ -97,6 +100,7 @@ def test_render_email_template(
 def test_ready_to_send():
     required = dict(
         id="1",
+        state=BaseModelState.CLEAN,
         created_at=datetime.now(),
         ticket_id="1234",
         recordID="rec1234",

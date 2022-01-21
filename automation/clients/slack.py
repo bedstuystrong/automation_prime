@@ -1,13 +1,9 @@
 import enum
-import random
-import string
 from typing import Optional
 
 import pydantic
 import requests
 import slack_sdk
-from slack_sdk import scim
-from slack_sdk.scim.v1.user import UserEmail
 import structlog
 
 from ..secrets import BaseSecret, SecretsClient
@@ -100,13 +96,6 @@ class SlackErrors(enum.Enum):
     USERS_NOT_FOUND = "users_not_found"
 
 
-def generate_password(length):
-    charset = string.ascii_letters + string.digits
-    return "".join(
-        [random.SystemRandom().choice(charset) for _ in range(length)]
-    )
-
-
 # TODO : add support for other slack client methods
 #
 # TODO : make the interface better and support pagination and
@@ -124,9 +113,6 @@ class SlackClient:
         secrets = SlackSecrets.load(secrets_client)
         self._slack_sdk_client = slack_sdk.WebClient(
             token=secrets.api_key.get_secret_value()
-        )
-        self._slack_scim_client = scim.SCIMClient(
-            token=secrets.scim_api_key.get_secret_value()
         )
         self._resend_invite_webhook = settings.resend_invite_webhook
         self._resend_invite_secret = (
@@ -150,22 +136,7 @@ class SlackClient:
 
         return wrapper
 
-    def _create_scim_user(self, email, name):
-        user = scim.User(
-            user_name=name,
-            display_name=name,
-            active=True,
-            password=generate_password(32),
-            emails=[UserEmail(value=email, primary=True)],
-        )
-        create_result = self._slack_scim_client.create_user(user)
-        if create_result.status_code == 201:
-            return create_result.user
-        else:
-            log.error(create_result.errors.description, email=email)
-            return None
-
-    def _resend_invite(self, email):
+    def _send_invite(self, email, name):
         try:
             headers = {
                 "Authorization": "Bearer %s" % self._resend_invite_secret,
@@ -173,16 +144,13 @@ class SlackClient:
             res = requests.post(
                 self._resend_invite_webhook,
                 headers=headers,
-                json={"email": email},
+                json={"email": email, "name": name},
             )
             res.raise_for_status()
-            return res.text
+            return res.json()
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code == requests.codes.not_found:
-                log.warning("Failed to send invite", email=email)
-                return None
-            else:
-                raise
+            log.warning("Failed to invite user", email=email, error=e)
+            return None
 
     def users_lookupByEmail(self, email):
         try:
@@ -199,13 +167,17 @@ class SlackClient:
                 raise
 
     def users_invite(self, email, name):
-        user = self._create_scim_user(email, name)
-        if user:
-            self._resend_invite(email)
+        response = self._send_invite(email, name)
+
+        if response and response["invited"]:
             return User(
-                id=user.id,
+                id=response["user"]["id"],
                 name=name,
                 profile=Profile(
                     email=email,
                 ),
             )
+        else:
+            if response:
+                log.warning("Invite email not sent", email=email)
+            return None

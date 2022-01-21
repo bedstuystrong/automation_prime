@@ -16,7 +16,6 @@ def on_new(
         log.info("Sending Slack invite")
         slack_user = slack_client.users_invite(member.email, member.name)
 
-    member.slack_email = slack_user.profile.email
     member.slack_user_id = slack_user.id
 
     # Create Auth0 user for Member Hub

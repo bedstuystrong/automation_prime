@@ -98,6 +98,7 @@ class Auth0Client:
                 self._refresh_token()
             raise e
 
+    # TODO : support creating users with phone numbers
     def create_user(self, email, name):
         return self.api_call(
             "POST",

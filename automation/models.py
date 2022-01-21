@@ -51,28 +51,20 @@ class MemberModel(MetaBaseModel):
     # TODO : fix data quality issues and make this non-optional
     email: Optional[str] = pydantic.Field(alias="Email Address")
     phone_number: Optional[str] = pydantic.Field(alias="Phone Number")
-    # TODO : this is the only slack handle field that matters, remove the
-    # old one
-    slack_handle: Optional[str] = pydantic.Field(
-        alias="Slack Handle (Derived)"
-    )
-    slack_email: Optional[str] = pydantic.Field(
-        alias="Email Address (from Slack)"
-    )
     slack_user_id: Optional[str] = pydantic.Field(alias="Slack User ID")
     communication_methods: List[str] = pydantic.Field(
         alias="Preferred Method of Communication", default_factory=list
     )
     intake_tickets: List[str] = pydantic.Field(
-        alias="Intake Member tickets", default_factory=list
+        alias="Intake Volunteer tickets", default_factory=list
     )
     delivery_tickets: List[str] = pydantic.Field(
-        alias="Delivery Member tickets",
+        alias="Delivery Volunteer tickets",
         default_factory=list,
     )
 
     def get_email(self) -> Optional[str]:
-        return self.email if self.email is not None else self.slack_email
+        return self.email
 
     @staticmethod
     def get_valid_statuses():

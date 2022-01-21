@@ -18,7 +18,7 @@ def validate_table(client):
     for page in client.client.get_iter():
         for raw in page:
             try:
-                client.table_spec.model_cls.from_airtable(raw)
+                client.table_spec.model_cls.from_airtable(**raw)
             except pydantic.error_wrappers.ValidationError as e:
                 for issue in e.errors():
                     validation_issues[(issue["loc"], issue["type"])].append(

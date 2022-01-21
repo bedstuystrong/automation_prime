@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 import random
 import string
 
+from automation.clients.airtable import BaseModelState
+
 from ..clients import slack
 from ..models import MemberModel
 
@@ -41,6 +43,7 @@ def get_random_airtable_id():
 
 def get_random_member():
     return MemberModel(
+        state=BaseModelState.CLEAN,
         id=get_random_string(),
         created_at=get_random_created_at(),
         **{
