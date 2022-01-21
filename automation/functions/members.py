@@ -23,8 +23,7 @@ def on_new(
     auth0_client.create_user(member.email, member.name)
 
     # Subscribe to newsletter
-    if "Email" in member.communication_methods:
-        mailchimp_client.subscribe(member.email)
+    mailchimp_client.subscribe(member.email)
 
     # Send the new member email
     log.info("Sending welcome email")
