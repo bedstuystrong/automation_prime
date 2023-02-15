@@ -13,13 +13,6 @@ RUN if [ "${INSTALL_NODE}" = "true" ]; then su vscode -c "source /usr/local/shar
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y --no-install-recommends install software-properties-common
 
-# Install gh CLI
-RUN export DEBIAN_FRONTEND=noninteractive \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
-    && apt-add-repository https://cli.github.com/packages \
-    && apt-get update \
-    && apt-get -y --no-install-recommends install gh
-
 # Install gcloud SDK
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" \
     | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \

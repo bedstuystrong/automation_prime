@@ -41,6 +41,9 @@
     "samuelcolvin.jinjahtml",
     "googlecloudtools.cloudcode"
   ],
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
